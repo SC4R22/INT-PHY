@@ -9,18 +9,27 @@ export default function GlobalError({
 }) {
   return (
     <html>
-      <body style={{ backgroundColor: '#25292D', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-        <div style={{ backgroundColor: '#2A2A2A', borderRadius: '12px', padding: '40px', maxWidth: '500px', width: '90%', border: '2px solid #6A0DAD' }}>
-          <h2 style={{ color: '#EFEFEF', fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>Something went wrong</h2>
-          <p style={{ color: '#ff6b6b', fontFamily: 'monospace', fontSize: '14px', backgroundColor: '#1a1a1a', padding: '12px', borderRadius: '6px', marginBottom: '20px', wordBreak: 'break-word' }}>
-            {error.message || 'Unknown error'}
+      <body className="bg-[#25292D] flex items-center justify-center min-h-screen font-sans p-4">
+        <div className="bg-[#2A2A2A] rounded-2xl p-10 max-w-md w-full border-2 border-primary shadow-2xl shadow-primary/20 text-center">
+          <div className="text-6xl mb-4">⚡</div>
+          <h2 className="text-2xl font-bold text-[#EFEFEF] mb-3">Something went wrong</h2>
+          <p className="text-sm font-mono text-red-400 bg-[#1a1a1a] px-4 py-3 rounded-xl mb-6 break-words text-left">
+            {error.message || 'An unexpected error occurred'}
           </p>
-          <button
-            onClick={reset}
-            style={{ backgroundColor: '#6A0DAD', color: '#EFEFEF', border: 'none', borderRadius: '8px', padding: '12px 24px', fontWeight: 700, cursor: 'pointer' }}
-          >
-            Try again
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={reset}
+              className="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/80 transition-all"
+            >
+              Try Again
+            </button>
+            <a
+              href="/"
+              className="w-full py-3 bg-[#3A3A3A] text-[#EFEFEF] rounded-xl font-bold hover:bg-[#4A4A4A] transition-all text-center"
+            >
+              Go Home
+            </a>
+          </div>
         </div>
       </body>
     </html>

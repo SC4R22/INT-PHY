@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
-import { ThemeToggle } from './theme-toggle'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -15,7 +14,7 @@ export function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-dark-bg/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-dark-bg/80">
+    <header className="sticky top-0 z-50 w-full border-b border-[#3A3A3A] bg-[#1e2125]/95 backdrop-blur">
       <nav className="container-custom flex items-center justify-between h-16 lg:h-20">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
@@ -30,7 +29,7 @@ export function Header() {
             <Link
               key={item.name}
               href={item.href}
-              className="text-sm lg:text-base font-medium text-light-body dark:text-dark-body hover:text-primary dark:hover:text-primary transition-colors"
+              className="text-sm lg:text-base font-medium text-[#B3B3B3] hover:text-primary transition-colors"
             >
               {item.name}
             </Link>
@@ -39,30 +38,23 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <ThemeToggle />
           <Link
             href="/login"
-            className="text-sm lg:text-base font-medium text-light-body dark:text-dark-body hover:text-primary transition-colors"
+            className="text-sm lg:text-base font-medium text-[#B3B3B3] hover:text-primary transition-colors"
           >
             Log in
           </Link>
-          <Link
-            href="/signup"
-            className="btn btn-primary text-sm lg:text-base"
-          >
+          <Link href="/signup" className="btn btn-primary text-sm lg:text-base">
             Sign up
           </Link>
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex md:hidden items-center space-x-2">
-          <ThemeToggle />
+        <div className="flex md:hidden items-center">
           <button
             type="button"
-            className="inline-flex items-center justify-center p-2 rounded-lg text-light-body dark:text-dark-body hover:text-primary"
+            className="inline-flex items-center justify-center p-2 rounded-lg text-[#B3B3B3] hover:text-primary"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            data-form-type="other"
-            suppressHydrationWarning
           >
             <span className="sr-only">Open main menu</span>
             {mobileMenuOpen ? (
@@ -76,13 +68,13 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-800">
+        <div className="md:hidden border-t border-[#3A3A3A] bg-[#1e2125]">
           <div className="space-y-1 px-4 pb-3 pt-2">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="block px-3 py-2 text-base font-medium text-light-body dark:text-dark-body hover:text-primary hover:bg-light-bg-secondary dark:hover:bg-dark-bg/50 rounded-lg"
+                className="block px-3 py-2 text-base font-medium text-[#B3B3B3] hover:text-primary hover:bg-[#2A2A2A] rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.name}
@@ -91,7 +83,7 @@ export function Header() {
             <div className="pt-4 space-y-2">
               <Link
                 href="/login"
-                className="block w-full text-center px-3 py-2 text-base font-medium text-light-body dark:text-dark-body hover:text-primary hover:bg-light-bg-secondary dark:hover:bg-dark-bg/50 rounded-lg"
+                className="block w-full text-center px-3 py-2 text-base font-medium text-[#B3B3B3] hover:text-primary hover:bg-[#2A2A2A] rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Log in

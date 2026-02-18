@@ -8,43 +8,21 @@
     --font-inter: 'Inter', sans-serif;
   }
 
-  /* Light mode by default */
+  /* Always dark */
   body {
-    @apply bg-light-bg text-light-body font-inter;
-  }
-
-  /* Dark mode */
-  .dark body {
-    @apply bg-dark-bg text-dark-body;
+    @apply bg-[#25292D] text-[#EFEFEF] font-inter;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-payback;
+    @apply font-payback text-[#EFEFEF];
   }
 
-  /* Light mode headings */
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-light-header;
-  }
-
-  /* Dark mode headings */
-  .dark h1, 
-  .dark h2, 
-  .dark h3, 
-  .dark h4, 
-  .dark h5, 
-  .dark h6 {
-    @apply text-dark-header;
-  }
-
-  /* Smooth transitions - only on interactive elements, not all */
   a, button {
     @apply transition-colors duration-200;
   }
 }
 
 @layer components {
-  /* Button styles */
   .btn {
     @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;
   }
@@ -57,23 +35,16 @@
     @apply bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white;
   }
 
-  /* Card styles */
   .card {
-    @apply rounded-xl shadow-lg overflow-hidden;
-    @apply bg-white dark:bg-dark-bg/50;
+    @apply rounded-xl shadow-lg overflow-hidden bg-[#2A2A2A];
   }
 
-  /* Input styles */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border-2 outline-none;
-    @apply bg-white dark:bg-dark-bg;
-    @apply border-gray-300 dark:border-gray-600;
-    @apply focus:border-primary;
+    @apply w-full px-4 py-3 rounded-lg border-2 outline-none bg-[#2A2A2A] border-[#3A3A3A] focus:border-primary text-[#EFEFEF];
   }
 }
 
 @layer utilities {
-  /* Custom utility classes */
   .text-gradient {
     @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
   }

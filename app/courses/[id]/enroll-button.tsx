@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface Props {
   courseId: string
@@ -40,16 +41,18 @@ export function EnrollButton({ courseId, courseTitle, isFree, isLoggedIn, isEnro
           .insert({ user_id: user.id, course_id: courseId })
 
         if (enrollError) {
-          // Already enrolled — treat as success
           if (enrollError.message.includes('duplicate') || enrollError.message.includes('unique')) {
             setSuccess(true)
+            toast.success('Already enrolled! Redirecting...')
           } else {
             setError(enrollError.message)
+            toast.error(enrollError.message)
             setLoading(false)
             return
           }
         } else {
           setSuccess(true)
+          toast.success(`You're enrolled in ${courseTitle}!`)
         }
 
         setTimeout(() => {
@@ -94,12 +97,15 @@ export function EnrollButton({ courseId, courseTitle, isFree, isLoggedIn, isEnro
       const result = data as { success: boolean; error?: string }
 
       if (!result.success) {
-        setError(result.error || 'Invalid or already used code. Please check and try again.')
+        const msg = result.error || 'Invalid or already used code. Please check and try again.'
+        setError(msg)
+        toast.error(msg)
         setLoading(false)
         return
       }
 
       setSuccess(true)
+      toast.success(`You're enrolled in ${courseTitle}!`)
       setLoading(false)
       setTimeout(() => {
         setShowModal(false)

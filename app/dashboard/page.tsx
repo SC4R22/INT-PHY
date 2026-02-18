@@ -63,7 +63,7 @@ export default async function DashboardPage() {
       .order('enrolled_at', { ascending: false })
     enrollments = enrollmentData || []
 
-    // Get continue watching (most recent incomplete video)
+    // Get continue watching — most recently watched incomplete video
     const { data: progressData } = await supabase
       .from('user_progress')
       .select(`
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       `)
       .eq('user_id', user.id)
       .eq('completed', false)
-      .order('updated_at', { ascending: false })
+      .order('last_watched_at', { ascending: false })
       .limit(1)
       .single()
 
@@ -126,23 +126,23 @@ export default async function DashboardPage() {
     return (
       <div className="min-h-screen bg-[#25292D]">
         {/* Header */}
-        <header className="bg-gradient-to-r from-primary to-primary/80 p-6">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 className="text-3xl font-payback font-bold text-white uppercase italic">
+        <header className="bg-gradient-to-r from-primary to-primary/80 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-payback font-bold text-white uppercase italic">
               Dashboard
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4">
               {profile.role === 'admin' && (
-                <Link href="/admin" className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400 transition-all">
+                <Link href="/admin" className="px-3 py-1.5 md:px-4 md:py-2 bg-yellow-500 text-black rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm md:text-base">
                   ⚙️ Admin Panel
                 </Link>
               )}
-              <span className="text-white font-semibold">{profile.full_name}</span>
-              <span className="px-3 py-1 bg-white text-primary rounded-full text-sm font-bold uppercase">
+              <span className="hidden sm:block text-white font-semibold text-sm">{profile.full_name}</span>
+              <span className="px-2 py-1 bg-white text-primary rounded-full text-xs font-bold uppercase">
                 {profile.role}
               </span>
               <form action="/api/auth/signout" method="post">
-                <button className="px-4 py-2 bg-white text-primary rounded-lg font-bold hover:bg-gray-100 transition-all">
+                <button className="px-3 py-1.5 md:px-4 md:py-2 bg-white text-primary rounded-lg font-bold hover:bg-gray-100 transition-all text-sm md:text-base">
                   Sign Out
                 </button>
               </form>
@@ -215,33 +215,67 @@ export default async function DashboardPage() {
   // Student Dashboard (matching Figma design)
   return (
     <div className="min-h-screen bg-[#25292D]">
-      {/* Top Header */}
-      <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A] p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Hamburger menu */}
-          <button className="flex flex-col gap-1.5 p-2" aria-label="Menu">
-            <span className="w-8 h-1 bg-[#B3B3B3] rounded"></span>
-            <span className="w-8 h-1 bg-[#B3B3B3] rounded"></span>
-            <span className="w-8 h-1 bg-[#B3B3B3] rounded"></span>
-          </button>
+      {/* Student Header */}
+      <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
 
-          {/* User info */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-[#EFEFEF] font-bold text-sm md:text-base">{profile.full_name}</p>
-              <div className="flex items-center gap-2 justify-end mt-1">
-                <span className="text-xs text-[#B3B3B3] bg-[#2A2A2A] px-2 py-1 rounded border border-[#3A3A3A]">
-                  Code: <span className="text-primary font-bold">******</span>
-                </span>
-                <span className="text-xs text-[#B3B3B3] bg-[#2A2A2A] px-2 py-1 rounded border border-[#3A3A3A]">
-                  Courses: <span className="text-primary font-bold">{enrollments.length}</span>
-                </span>
+          {/* Left — Logo / brand */}
+          <Link href="/dashboard" className="font-payback font-black text-primary text-2xl uppercase italic tracking-wide flex-shrink-0">
+            INTPHY
+          </Link>
+
+          {/* Center — Nav links */}
+          <nav className="hidden md:flex items-center gap-1">
+            <Link
+              href="/dashboard"
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/courses"
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all"
+            >
+              Browse Courses
+            </Link>
+          </nav>
+
+          {/* Right — Avatar + name + sign out */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Avatar + name */}
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {profile.full_name.charAt(0).toUpperCase()}
               </div>
+              <span className="hidden sm:block text-[#EFEFEF] font-semibold text-sm">{profile.full_name}</span>
             </div>
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-xl">
-              {profile.full_name.charAt(0).toUpperCase()}
-            </div>
+
+            {/* Sign out */}
+            <form action="/api/auth/signout" method="post">
+              <button
+                type="submit"
+                className="px-3 py-1.5 text-xs font-bold text-[#B3B3B3] hover:text-[#EFEFEF] border border-[#3A3A3A] hover:border-[#555] rounded-lg transition-all"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
+        </div>
+
+        {/* Mobile nav */}
+        <div className="md:hidden border-t border-[#3A3A3A] px-4 py-2 flex gap-2">
+          <Link
+            href="/dashboard"
+            className="flex-1 text-center py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/courses"
+            className="flex-1 text-center py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all"
+          >
+            Browse Courses
+          </Link>
         </div>
       </header>
 
@@ -250,38 +284,53 @@ export default async function DashboardPage() {
         {/* Top Row: Continue Watching + Get New Courses */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Continue Watching */}
-          {continueWatching ? (
-            <Link
-              href={`/dashboard/watch/${continueWatching.video_id}`}
-              className="group relative bg-[#2A2A2A] rounded-2xl overflow-hidden border-2 border-primary hover:border-primary/80 transition-all hover:scale-[1.02] min-h-[280px] flex items-center justify-center"
-            >
-              {/* Play Icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 bg-[#B3B3B3]/30 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <div className="w-0 h-0 border-l-[24px] border-l-[#EFEFEF] border-t-[14px] border-t-transparent border-b-[14px] border-b-transparent ml-2"></div>
-                </div>
-              </div>
+          {continueWatching ? (() => {
+            const vid = continueWatching.videos as any
+            const mod = vid?.modules as any
+            const course = mod?.courses as any
+            const dur = vid?.duration || 0
+            const pos = continueWatching.last_position || 0
+            const watchedPct = dur > 0 ? Math.min(100, Math.round((pos / dur) * 100)) : 0
+            const remainingPct = 100 - watchedPct
 
-              {/* Progress Bar */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 flex">
-                <div
-                  className="bg-primary flex items-center justify-center text-white font-black text-2xl font-payback"
-                  style={{ width: `${Math.round((continueWatching.last_position || 0) / (continueWatching.videos?.duration || 1) * 100)}%` }}
-                >
-                  {Math.round((continueWatching.last_position || 0) / (continueWatching.videos?.duration || 1) * 100)}%
+            return (
+              <Link
+                href={`/dashboard/watch/${continueWatching.video_id}`}
+                className="group relative bg-[#2A2A2A] rounded-2xl overflow-hidden border-2 border-primary hover:border-primary/80 transition-all hover:scale-[1.02] min-h-[280px] flex items-center justify-center"
+              >
+                {/* Center play button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-black/40 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/80 transition-all border-2 border-white/30">
+                    <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
                 </div>
-                <div className="bg-white flex items-center justify-center text-[#1a1a1a] font-black text-2xl font-payback flex-1">
-                  {100 - Math.round((continueWatching.last_position || 0) / (continueWatching.videos?.duration || 1) * 100)}%
-                </div>
-              </div>
 
-              {/* Title overlay */}
-              <div className="absolute top-4 left-4 right-4 bg-[#1a1a1a]/80 backdrop-blur-sm rounded-lg p-3">
-                <p className="text-[#B3B3B3] text-xs mb-1">Continue Watching</p>
-                <p className="text-[#EFEFEF] font-bold text-sm line-clamp-1">{continueWatching.videos?.title}</p>
-              </div>
-            </Link>
-          ) : (
+                {/* Split progress bar at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-14 flex">
+                  <div
+                    className="bg-primary flex items-center justify-center text-white font-black text-xl font-payback transition-all"
+                    style={{ width: `${watchedPct}%`, minWidth: watchedPct > 0 ? '2.5rem' : '0' }}
+                  >
+                    {watchedPct > 8 ? `${watchedPct}%` : ''}
+                  </div>
+                  <div className="bg-[#1a1a1a] flex items-center justify-center text-[#B3B3B3] font-black text-xl font-payback flex-1">
+                    {remainingPct < 100 ? `${remainingPct}%` : ''}
+                  </div>
+                </div>
+
+                {/* Top overlay: course + video name */}
+                <div className="absolute top-4 left-4 right-4 bg-[#1a1a1a]/85 backdrop-blur-sm rounded-xl p-3">
+                  <p className="text-primary text-xs font-bold uppercase tracking-wider mb-0.5">Continue Watching</p>
+                  {course?.title && (
+                    <p className="text-[#B3B3B3] text-xs mb-1 truncate">{course.title}</p>
+                  )}
+                  <p className="text-[#EFEFEF] font-bold text-sm line-clamp-1">{vid?.title}</p>
+                </div>
+              </Link>
+            )
+          })() : (
             <div className="bg-[#2A2A2A] rounded-2xl border-2 border-dashed border-[#3A3A3A] min-h-[280px] flex items-center justify-center p-8">
               <div className="text-center">
                 <p className="text-4xl mb-3">🎬</p>
