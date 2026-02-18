@@ -1,0 +1,189 @@
+import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
+
+export default async function AdminCoursesPage() {
+  const supabase = await createClient()
+
+  // Get all courses (including unpublished and soft-deleted marked separately)
+  const { data: courses } = await supabase
+    .from('courses')
+    .select(`
+      *,
+      teacher:teacher_id (full_name),
+      analytics:course_analytics (
+        total_enrollments,
+        active_students,
+        average_completion_rate
+      )
+    `)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  return (
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
+            Course Management
+          </h1>
+          <p className="text-[#B3B3B3]">
+            Create, edit, and manage all courses
+          </p>
+        </div>
+        <Link
+          href="/admin/courses/new"
+          className="px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all shadow-lg hover:shadow-[#6A0DAD]/40 flex items-center gap-2"
+        >
+          <span className="text-xl">+</span>
+          <span>Create New Course</span>
+        </Link>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-[#2A2A2A] rounded-lg p-4 border-2 border-[#6A0DAD]">
+          <p className="text-[#B3B3B3] text-sm">Total Courses</p>
+          <p className="text-3xl font-bold text-[#EFEFEF]">{courses?.length || 0}</p>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-lg p-4">
+          <p className="text-[#B3B3B3] text-sm">Published</p>
+          <p className="text-3xl font-bold text-green-400">
+            {courses?.filter(c => c.published).length || 0}
+          </p>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-lg p-4">
+          <p className="text-[#B3B3B3] text-sm">Drafts</p>
+          <p className="text-3xl font-bold text-yellow-400">
+            {courses?.filter(c => !c.published).length || 0}
+          </p>
+        </div>
+        <div className="bg-[#2A2A2A] rounded-lg p-4">
+          <p className="text-[#B3B3B3] text-sm">Free Courses</p>
+          <p className="text-3xl font-bold text-blue-400">
+            {courses?.filter(c => c.is_free).length || 0}
+          </p>
+        </div>
+      </div>
+
+      {/* Courses List */}
+      <div className="bg-[#2A2A2A] rounded-xl shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-[#6A0DAD]">
+              <tr>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Course Title
+                </th>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Price
+                </th>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Students
+                </th>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Completion
+                </th>
+                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">
+                  Created
+                </th>
+                <th className="px-6 py-4 text-right text-[#EFEFEF] font-bold">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y-2 divide-[#3A3A3A]">
+              {courses && courses.length > 0 ? (
+                courses.map((course: any) => (
+                  <tr
+                    key={course.id}
+                    className="hover:bg-[#3A3A3A] transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-[#EFEFEF] font-semibold">
+                          {course.title}
+                        </p>
+                        <p className="text-[#B3B3B3] text-sm line-clamp-1">
+                          {course.description}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        {course.published ? (
+                          <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                            PUBLISHED
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-yellow-500 text-black text-xs font-bold rounded-full">
+                            DRAFT
+                          </span>
+                        )}
+                        {course.is_free && (
+                          <span className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
+                            FREE
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-[#EFEFEF]">
+                      {course.is_free ? (
+                        'Free'
+                      ) : (
+                        `${course.price_cash} EGP`
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-[#EFEFEF]">
+                      {course.analytics?.[0]?.total_enrollments || 0}
+                    </td>
+                    <td className="px-6 py-4 text-[#EFEFEF]">
+                      {course.analytics?.[0]?.average_completion_rate?.toFixed(1) || 0}%
+                    </td>
+                    <td className="px-6 py-4 text-[#B3B3B3] text-sm">
+                      {new Date(course.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/courses/${course.id}/edit`}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Edit
+                        </Link>
+                        <Link
+                          href={`/admin/courses/${course.id}/content`}
+                          className="px-3 py-1 bg-[#6A0DAD] text-white text-sm font-semibold rounded hover:bg-[#8B2CAD] transition-colors"
+                        >
+                          Content
+                        </Link>
+
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <p className="text-[#B3B3B3] text-lg mb-4">
+                      No courses created yet
+                    </p>
+                    <Link
+                      href="/admin/courses/new"
+                      className="inline-block px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all"
+                    >
+                      Create Your First Course
+                    </Link>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}

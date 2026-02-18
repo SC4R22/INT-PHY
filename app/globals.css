@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-payback: 'Payback', sans-serif;
+    --font-inter: 'Inter', sans-serif;
+  }
+
+  /* Light mode by default */
+  body {
+    @apply bg-light-bg text-light-body font-inter;
+  }
+
+  /* Dark mode */
+  .dark body {
+    @apply bg-dark-bg text-dark-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-payback;
+  }
+
+  /* Light mode headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-light-header;
+  }
+
+  /* Dark mode headings */
+  .dark h1, 
+  .dark h2, 
+  .dark h3, 
+  .dark h4, 
+  .dark h5, 
+  .dark h6 {
+    @apply text-dark-header;
+  }
+
+  /* Smooth transitions - only on interactive elements, not all */
+  a, button {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  /* Button styles */
+  .btn {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-600 active:bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white;
+  }
+
+  /* Card styles */
+  .card {
+    @apply rounded-xl shadow-lg overflow-hidden;
+    @apply bg-white dark:bg-dark-bg/50;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-4 py-3 rounded-lg border-2 outline-none;
+    @apply bg-white dark:bg-dark-bg;
+    @apply border-gray-300 dark:border-gray-600;
+    @apply focus:border-primary;
+  }
+}
+
+@layer utilities {
+  /* Custom utility classes */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
