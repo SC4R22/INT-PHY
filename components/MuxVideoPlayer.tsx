@@ -45,7 +45,7 @@ export function MuxVideoPlayer({
         aspectRatio: '16 / 9',
         display: 'block',
         '--controls': 'auto',
-      } as React.CSSProperties}
+      } as any}
       onTimeUpdate={handleTimeUpdate}
       onEnded={onEnded}
       onPause={handlePause}

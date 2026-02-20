@@ -22,6 +22,37 @@ export function MuxVideoUploader({ onSuccess, onError }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const xhrRef = useRef<XMLHttpRequest | null>(null)
 
+  const pollUntilReady = useCallback(async (uploadId: string, attempt = 0): Promise<void> => {
+    // Give up after ~10 minutes (60 attempts × 10s)
+    if (attempt > 60) {
+      throw new Error('Mux processing timed out. The video may still be processing — try refreshing.')
+    }
+
+    await new Promise(r => setTimeout(r, attempt === 0 ? 3000 : 10_000))
+
+    const res = await fetch(`/api/videos/status?uploadId=${uploadId}`)
+    if (!res.ok) throw new Error('Failed to check processing status')
+
+    const data = await res.json()
+
+    if (data.status === 'errored') {
+      throw new Error('Mux failed to process this video. Please try a different file.')
+    }
+
+    if (data.ready && data.playbackId) {
+      setStatus('ready')
+      onSuccess({
+        assetId: data.assetId,
+        playbackId: data.playbackId,
+        duration: data.duration,
+      })
+      return
+    }
+
+    // Not ready yet — keep polling
+    return pollUntilReady(uploadId, attempt + 1)
+  }, [onSuccess])
+
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -76,38 +107,7 @@ export function MuxVideoUploader({ onSuccess, onError }: Props) {
       setStatus('error')
       onError?.(msg)
     }
-  }, [onSuccess, onError])
-
-  async function pollUntilReady(uploadId: string, attempt = 0): Promise<void> {
-    // Give up after ~10 minutes (60 attempts × 10s)
-    if (attempt > 60) {
-      throw new Error('Mux processing timed out. The video may still be processing — try refreshing.')
-    }
-
-    await new Promise(r => setTimeout(r, attempt === 0 ? 3000 : 10_000))
-
-    const res = await fetch(`/api/videos/status?uploadId=${uploadId}`)
-    if (!res.ok) throw new Error('Failed to check processing status')
-
-    const data = await res.json()
-
-    if (data.status === 'errored') {
-      throw new Error('Mux failed to process this video. Please try a different file.')
-    }
-
-    if (data.ready && data.playbackId) {
-      setStatus('ready')
-      onSuccess({
-        assetId: data.assetId,
-        playbackId: data.playbackId,
-        duration: data.duration,
-      })
-      return
-    }
-
-    // Not ready yet — keep polling
-    return pollUntilReady(uploadId, attempt + 1)
-  }
+  }, [onError, pollUntilReady])
 
   const reset = () => {
     xhrRef.current?.abort()
