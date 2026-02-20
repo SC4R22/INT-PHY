@@ -32,7 +32,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       setLoading(false)
     }
     fetchCourse()
-  }, [id])
+  }, [id, supabase])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target

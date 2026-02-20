@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { generateAccessCodes, deleteAccessCode } from '@/app/actions/access-codes'
 
@@ -27,7 +27,7 @@ export default function AccessCodesPage() {
 
   const supabase = useMemo(() => createClient(), [])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const { data: coursesData } = await supabase.from('courses').select('id, title').is('deleted_at', null).order('title')
     setCourses(coursesData || [])
@@ -43,9 +43,9 @@ export default function AccessCodesPage() {
       .limit(200)
     setCodes((codesData as any) || [])
     setLoading(false)
-  }
+  }, [supabase])
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()

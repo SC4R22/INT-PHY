@@ -29,6 +29,11 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
   const progressRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hlsRef = useRef<any>(null)
+  // Stable refs for keyboard handler — avoids re-registering on every render
+  const togglePlayRef = useRef<() => void>(() => {})
+  const skipRef = useRef<(s: number) => void>(() => {})
+  const toggleMuteRef = useRef<() => void>(() => {})
+  const toggleFullscreenRef = useRef<() => void>(() => {})
 
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(startTime)
@@ -102,55 +107,6 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
     }
   }, [playing])
 
-  // ── Keyboard shortcuts ────────────────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Only handle keys when player container is focused / in view
-      if (!containerRef.current) return
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
-
-      const video = videoRef.current
-      if (!video) return
-
-      switch (e.key) {
-        case ' ':
-        case 'k':
-          e.preventDefault()
-          togglePlay()
-          break
-        case 'ArrowLeft':
-        case 'j':
-          e.preventDefault()
-          skip(-SKIP_SECONDS)
-          break
-        case 'ArrowRight':
-        case 'l':
-          e.preventDefault()
-          skip(SKIP_SECONDS)
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setVolume(v => { const nv = Math.min(1, v + 0.1); video.volume = nv; return nv })
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setVolume(v => { const nv = Math.max(0, v - 0.1); video.volume = nv; return nv })
-          break
-        case 'f':
-          e.preventDefault()
-          toggleFullscreen()
-          break
-        case 'm':
-          e.preventDefault()
-          toggleMute()
-          break
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [playing])
-
   // ── Player actions ────────────────────────────────────────────────────────
   const togglePlay = useCallback(() => {
     const video = videoRef.current
@@ -200,6 +156,59 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
       await document.exitFullscreen()
     }
   }, [])
+
+  // Keep refs up to date so the keyboard handler always calls the latest version
+  useEffect(() => { togglePlayRef.current = togglePlay }, [togglePlay])
+  useEffect(() => { skipRef.current = skip }, [skip])
+  useEffect(() => { toggleMuteRef.current = toggleMute }, [toggleMute])
+  useEffect(() => { toggleFullscreenRef.current = toggleFullscreen }, [toggleFullscreen])
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!containerRef.current) return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      const video = videoRef.current
+      if (!video) return
+
+      switch (e.key) {
+        case ' ':
+        case 'k':
+          e.preventDefault()
+          togglePlayRef.current()
+          break
+        case 'ArrowLeft':
+        case 'j':
+          e.preventDefault()
+          skipRef.current(-SKIP_SECONDS)
+          break
+        case 'ArrowRight':
+        case 'l':
+          e.preventDefault()
+          skipRef.current(SKIP_SECONDS)
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setVolume(v => { const nv = Math.min(1, v + 0.1); video.volume = nv; return nv })
+          break
+        case 'ArrowDown':
+          e.preventDefault()
+          setVolume(v => { const nv = Math.max(0, v - 0.1); video.volume = nv; return nv })
+          break
+        case 'f':
+          e.preventDefault()
+          toggleFullscreenRef.current()
+          break
+        case 'm':
+          e.preventDefault()
+          toggleMuteRef.current()
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, []) // stable — reads from refs, never needs to re-register
 
   // ── Progress bar scrubbing ────────────────────────────────────────────────
   const seekTo = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
