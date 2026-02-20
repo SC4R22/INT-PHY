@@ -32,7 +32,7 @@ export async function POST() {
     body: JSON.stringify({
       cors_origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       new_asset_settings: {
-        playback_policy: ['public'],
+        playback_policy: ['signed'],
         encoding_tier: 'baseline', // cheapest tier, good for educational content
       },
     }),

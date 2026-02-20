@@ -1,14 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
-
+// This endpoint has been intentionally removed.
+// It previously leaked user data publicly without auth gating.
+// Session state is managed server-side via Supabase SSR cookies.
+export const dynamic = 'force-dynamic'
 export async function GET() {
-  const supabase = await createClient()
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  return NextResponse.json({
-    user: user,
-    error: error,
-    hasUser: !!user
-  })
+  return new Response('Not Found', { status: 404 })
 }

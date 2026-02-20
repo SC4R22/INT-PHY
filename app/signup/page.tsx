@@ -1,41 +1,41 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignUpPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup')
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"signup" | "login">("signup");
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    parentName: '',
-    phoneNumber: '',
-    parentPhoneNumber: '',
-    password: ''
-  })
+    fullName: "",
+    parentName: "",
+    phoneNumber: "",
+    parentPhoneNumber: "",
+    password: "",
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
-      const supabase = createClient()
-      
+      const supabase = createClient();
+
       // Convert phone to email format
-      const cleanPhone = formData.phoneNumber.replace(/[^0-9]/g, '')
-      const email = `${cleanPhone}@intphy.app`
+      const cleanPhone = formData.phoneNumber.replace(/[^0-9]/g, "");
+      const email = `${cleanPhone}@intphy.app`;
 
       const { error } = await supabase.auth.signUp({
         email,
@@ -46,25 +46,25 @@ export default function SignUpPage() {
             parent_name: formData.parentName || null,
             phone_number: formData.phoneNumber,
             parent_phone_number: formData.parentPhoneNumber || null,
-            role: 'student',
+            role: "student",
           },
         },
-      })
+      });
 
       if (error) {
-        setError(error.message)
-        setLoading(false)
-        return
+        setError(error.message);
+        setLoading(false);
+        return;
       }
 
       // Signup successful - redirect to dashboard
-      router.push('/dashboard')
-      router.refresh() // Refresh to update server components
+      router.push("/dashboard");
+      router.refresh(); // Refresh to update server components
     } catch {
-      setError('An unexpected error occurred. Please try again.')
-      setLoading(false)
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#1a1a1a]">
@@ -80,11 +80,11 @@ export default function SignUpPage() {
         {/* Tabs */}
         <div className="flex border-b-4 border-[#6A0DAD]">
           <button
-            onClick={() => setActiveTab('signup')}
+            onClick={() => setActiveTab("signup")}
             className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
-              activeTab === 'signup'
-                ? 'text-[#6A0DAD] bg-[#2A2A2A]'
-                : 'text-[#EFEFEF] bg-[#1a1a1a]'
+              activeTab === "signup"
+                ? "text-[#6A0DAD] bg-[#2A2A2A]"
+                : "text-[#EFEFEF] bg-[#1a1a1a]"
             }`}
             suppressHydrationWarning
           >
@@ -92,13 +92,13 @@ export default function SignUpPage() {
           </button>
           <button
             onClick={() => {
-              setActiveTab('login')
-              router.push('/login')
+              setActiveTab("login");
+              router.push("/login");
             }}
             className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
-              activeTab === 'login'
-                ? 'text-[#6A0DAD] bg-[#2A2A2A]'
-                : 'text-[#EFEFEF] bg-[#1a1a1a]'
+              activeTab === "login"
+                ? "text-[#6A0DAD] bg-[#2A2A2A]"
+                : "text-[#EFEFEF] bg-[#1a1a1a]"
             }`}
             suppressHydrationWarning
           >
@@ -188,7 +188,7 @@ export default function SignUpPage() {
                 onChange={handleInputChange}
                 placeholder="Create a password"
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] focus:bg-[#404040] transition-all placeholder:text-gray-500"
                 suppressHydrationWarning
               />
@@ -200,11 +200,11 @@ export default function SignUpPage() {
               className="w-full py-5 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg text-xl font-bold hover:bg-[#8B2CAD] transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-[#6A0DAD]/40 disabled:opacity-60 disabled:cursor-not-allowed"
               suppressHydrationWarning
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }

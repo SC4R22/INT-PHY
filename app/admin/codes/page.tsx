@@ -2,24 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { generateAccessCodes, deleteAccessCode } from '@/app/actions/access-codes'
 
 interface Course { id: string; title: string }
 interface AccessCode {
   id: string; code: string; course_id: string; is_used: boolean; created_at: string; expires_at: string | null
   course: { title: string } | null
   used_by_profile: { full_name: string; phone_number: string } | null
-}
-
-function generateCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const randomBytes = new Uint8Array(12)
-  crypto.getRandomValues(randomBytes)
-  let code = ''
-  for (let i = 0; i < 12; i++) {
-    if (i > 0 && i % 4 === 0) code += '-'
-    code += chars[randomBytes[i] % chars.length]
-  }
-  return code
 }
 
 export default function AccessCodesPage() {
@@ -65,24 +54,17 @@ export default function AccessCodesPage() {
     setError(null)
     setSuccess(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Not authenticated'); setGenerating(false); return }
-
     const quantity = Math.min(parseInt(genForm.quantity) || 1, 100)
-    const expiresAt = genForm.expires_in_days
-      ? new Date(Date.now() + parseInt(genForm.expires_in_days) * 86400000).toISOString()
-      : null
+    const expiresInDays = genForm.expires_in_days ? parseInt(genForm.expires_in_days) : undefined
 
-    const newCodes = Array.from({ length: quantity }, () => ({
-      code: generateCode(),
-      course_id: genForm.course_id,
-      is_used: false,
-      created_by: user.id,
-      expires_at: expiresAt,
-    }))
+    // Use the server action — role is verified server-side
+    const result = await generateAccessCodes(genForm.course_id, quantity, expiresInDays)
 
-    const { error: insertError } = await supabase.from('access_codes').insert(newCodes)
-    if (insertError) { setError(insertError.message); setGenerating(false); return }
+    if (!result.success) {
+      setError(result.error || 'Failed to generate codes')
+      setGenerating(false)
+      return
+    }
 
     setSuccess(`✓ Generated ${quantity} access code${quantity > 1 ? 's' : ''} successfully`)
     setGenerating(false)
@@ -98,7 +80,12 @@ export default function AccessCodesPage() {
 
   const deleteCode = async (id: string) => {
     if (!confirm('Delete this unused code?')) return
-    await supabase.from('access_codes').delete().eq('id', id).eq('is_used', false)
+    // Use the server action — role is verified server-side
+    const result = await deleteAccessCode(id)
+    if (!result.success) {
+      setError(result.error || 'Failed to delete code')
+      return
+    }
     fetchData()
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CustomVideoPlayer } from '@/components/CustomVideoPlayer'
@@ -46,6 +46,31 @@ export function VideoPlayer({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [completed, setCompleted] = useState(isCompleted)
   const [saving, setSaving] = useState(false)
+
+  // ── Signed Mux token ──────────────────────────────────────────────────────
+  const [muxToken, setMuxToken] = useState<string | null>(null)
+  const [tokenError, setTokenError] = useState(false)
+
+  useEffect(() => {
+    if (!muxPlaybackId) return
+
+    let cancelled = false
+    const fetchToken = async () => {
+      try {
+        const res = await fetch(
+          `/api/videos/signed-url?playbackId=${encodeURIComponent(muxPlaybackId)}&videoId=${encodeURIComponent(videoId)}`
+        )
+        if (!res.ok) throw new Error('Failed to fetch token')
+        const { token } = await res.json()
+        if (!cancelled) setMuxToken(token)
+      } catch {
+        if (!cancelled) setTokenError(true)
+      }
+    }
+
+    fetchToken()
+    return () => { cancelled = true }
+  }, [muxPlaybackId, videoId])
 
   // ── Progress saving ───────────────────────────────────────────────────────
   const saveProgress = useCallback(async (position: number, done: boolean) => {
@@ -95,8 +120,10 @@ export function VideoPlayer({
 
   // ── Determine source ──────────────────────────────────────────────────────
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null
-  // Mux HLS URL — the custom player uses hls.js to load this
-  const muxSrc = muxPlaybackId ? `https://stream.mux.com/${muxPlaybackId}.m3u8` : null
+  // For Mux: build signed HLS URL using the JWT token
+  const muxSrc = muxPlaybackId && muxToken
+    ? `https://stream.mux.com/${muxPlaybackId}.m3u8?token=${muxToken}`
+    : null
   // Native direct URL (mp4 etc.) — used when no Mux ID and not YouTube
   const nativeSrc = !muxPlaybackId && !youtubeId ? videoUrl : null
 
@@ -105,8 +132,32 @@ export function VideoPlayer({
   return (
     <div className="flex flex-col flex-1">
       {/* ── Player ── */}
-      {videoSrc ? (
-        // Custom Udemy-style player for Mux + native videos
+      {muxPlaybackId ? (
+        // Mux video — wait for signed token before rendering
+        tokenError ? (
+          <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
+            <div className="text-center text-[#B3B3B3]">
+              <p className="text-4xl mb-3">🔒</p>
+              <p className="font-semibold">Unable to load video. Please refresh the page.</p>
+            </div>
+          </div>
+        ) : !muxToken ? (
+          // Loading token
+          <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
+            <div className="w-10 h-10 border-4 border-[#6A0DAD] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <CustomVideoPlayer
+            src={muxSrc!}
+            title={videoTitle}
+            startTime={initialPosition}
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={handleEnded}
+            onPause={handlePause}
+          />
+        )
+      ) : videoSrc ? (
+        // Native mp4/HLS (non-Mux)
         <CustomVideoPlayer
           src={videoSrc}
           title={videoTitle}

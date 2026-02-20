@@ -20,17 +20,14 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  // If profile fetch fails, show a debug screen instead of redirect-looping
+  // If profile fetch fails, show a generic error screen (no internal error details exposed)
   if (profileError || !profile) {
     return (
       <div className="min-h-screen bg-[#25292D] flex items-center justify-center p-4">
         <div className="bg-[#2A2A2A] rounded-xl p-8 max-w-lg w-full border-2 border-primary">
           <h2 className="text-2xl font-bold text-[#EFEFEF] mb-3">Profile Not Found</h2>
           <p className="text-[#B3B3B3] mb-4">
-            You are logged in as <strong className="text-[#EFEFEF]">{user.email}</strong> but no profile row was found.
-          </p>
-          <p className="text-red-400 font-mono text-sm bg-[#1a1a1a] p-3 rounded-lg mb-5">
-            {profileError?.message || 'No profile row found for this user ID'}
+            Your account is logged in but no profile was found. Please sign out and contact support if the issue persists.
           </p>
           <div className="flex gap-3">
             <Link href="/api/auth/signout" className="btn btn-primary">
