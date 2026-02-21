@@ -3,31 +3,29 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        // Tightened to exact Supabase project hostname (was **.supabase.co)
         protocol: 'https',
         hostname: 'vrefcmplibzoayfyfidd.supabase.co',
       },
       {
-        // Keep wildcard for R2 until a specific bucket subdomain is confirmed
         protocol: 'https',
         hostname: '**.r2.dev',
       },
     ],
   },
 
-  // Security headers applied to every route
   async headers() {
-    // Content Security Policy
-    // - Tightened per actual asset sources used in the app
-    // - 'unsafe-inline' for styles is required by Tailwind CSS
-    // - blob: in media-src is required by hls.js (MSE API)
     const csp = [
       `default-src 'self'`,
-      `script-src 'self' 'unsafe-eval' https://cdn.mux.com`,
+      // Mux player loads scripts from cdn.mux.com and uses inline eval for HLS
+      `script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.mux.com https://*.mux.com`,
       `style-src 'self' 'unsafe-inline'`,
-      `img-src 'self' data: blob: https://vrefcmplibzoayfyfidd.supabase.co https://*.r2.dev`,
-      `media-src 'self' blob: https://stream.mux.com`,
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mux.com https://storage.googleapis.com https://ingest.mux.com`,
+      `img-src 'self' data: blob: https://vrefcmplibzoayfyfidd.supabase.co https://*.r2.dev https://image.mux.com`,
+      // blob: required by hls.js MSE, https://*.mux.com covers all Mux streaming domains
+      `media-src 'self' blob: https://stream.mux.com https://*.mux.com`,
+      // Mux uses multiple subdomains for API, ingest, and analytics
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mux.com https://ingest.mux.com https://*.mux.com wss://*.mux.com https://storage.googleapis.com`,
+      // worker-src needed for hls.js web workers
+      `worker-src 'self' blob:`,
       `frame-src https://www.youtube.com https://www.youtube-nocookie.com`,
       `font-src 'self' data:`,
       `object-src 'none'`,
@@ -40,17 +38,11 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
-          // Prevent clickjacking — disallow embedding in iframes
           { key: 'X-Frame-Options', value: 'DENY' },
-          // Prevent MIME-type sniffing
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          // Control referrer info sent on navigation
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          // Disable camera/mic/geo access from this origin
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          // Force HTTPS for 1 year
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-          // Content Security Policy
           { key: 'Content-Security-Policy', value: csp },
         ],
       },
@@ -59,7 +51,6 @@ const nextConfig = {
 
   experimental: {
     serverActions: {
-      // Reduced from 100mb — uploads go direct-to-Mux, not through server actions
       bodySizeLimit: '4mb',
     },
   },
