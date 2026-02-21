@@ -1,5 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -14,11 +18,14 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
+  // Use admin client to bypass RLS — user identity already verified above via auth.getUser()
+  const admin = createAdminClient()
+
   // Retry up to 5 times with 600ms delay — handles race condition where
-  // the auth trigger hasn't finished creating the profile row yet
+  // the DB trigger hasn't finished creating the profile row yet (e.g. right after signup)
   let profile: any = null
   for (let i = 0; i < 5; i++) {
-    const { data } = await supabase
+    const { data } = await admin
       .from('user_profiles')
       .select('*')
       .eq('id', user!.id)
@@ -56,7 +63,7 @@ export default async function DashboardPage() {
 
   if (profile.role === 'student') {
     // Get enrollments — include deleted courses so we can show them in the expired section
-    const { data: enrollmentData } = await supabase
+    const { data: enrollmentData } = await admin
       .from('enrollments')
       .select(`
         *,
@@ -67,7 +74,7 @@ export default async function DashboardPage() {
     enrollments = enrollmentData || []
 
     // Get continue watching — most recently watched incomplete video
-    const { data: progressData } = await supabase
+    const { data: progressData } = await admin
       .from('user_progress')
       .select(`
         *,
@@ -96,7 +103,7 @@ export default async function DashboardPage() {
       if (!courseId) continue
 
       // Get all videos in this course
-      const { data: allVideos } = await supabase
+      const { data: allVideos } = await admin
         .from('videos')
         .select('id, module_id, modules!inner(course_id)')
         .eq('modules.course_id', courseId)
@@ -104,7 +111,7 @@ export default async function DashboardPage() {
       const totalVideos = allVideos?.length || 0
 
       // Get completed videos
-      const { count: completedCount } = await supabase
+      const { count: completedCount } = await admin
         .from('user_progress')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
