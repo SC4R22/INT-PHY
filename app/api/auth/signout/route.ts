@@ -1,23 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function POST(request: NextRequest) {
-  // Basic CSRF guard: require the request to originate from the same site
-  const origin = request.headers.get('origin')
-  const host = request.headers.get('host')
-  if (origin && host) {
-    try {
-      const originHost = new URL(origin).host
-      if (originHost !== host) {
-        return new Response('Forbidden', { status: 403 })
-      }
-    } catch {
-      return new Response('Forbidden', { status: 403 })
-    }
-  }
-
+async function handleSignOut(request: NextRequest) {
   const supabase = await createClient()
   await supabase.auth.signOut()
-
   return NextResponse.redirect(new URL('/login', request.url))
+}
+
+export async function POST(request: NextRequest) {
+  return handleSignOut(request)
+}
+
+// Also handle GET so <Link href="/api/auth/signout"> and direct navigation works
+export async function GET(request: NextRequest) {
+  return handleSignOut(request)
 }

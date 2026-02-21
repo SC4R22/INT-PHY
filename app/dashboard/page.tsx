@@ -14,14 +14,20 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  // Retry up to 5 times with 600ms delay — handles race condition where
+  // the auth trigger hasn't finished creating the profile row yet
+  let profile: any = null
+  for (let i = 0; i < 5; i++) {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user!.id)
+      .single()
+    if (data) { profile = data; break }
+    await new Promise(r => setTimeout(r, 600))
+  }
 
-  // If profile fetch fails, show a generic error screen (no internal error details exposed)
-  if (profileError || !profile) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-[#25292D] flex items-center justify-center p-4">
         <div className="bg-[#2A2A2A] rounded-xl p-8 max-w-lg w-full border-2 border-primary">
