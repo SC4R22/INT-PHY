@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { login } from '@/app/actions/auth'
 
 function LoginContent() {
   const router = useRouter()
@@ -22,12 +22,9 @@ function LoginContent() {
     setError(null)
     setLoading(true)
     try {
-      const supabase = createClient()
-      const cleanPhone = formData.phoneNumber.replace(/[^0-9]/g, '')
-      const email = `${cleanPhone}@intphy.app`
-      const { error } = await supabase.auth.signInWithPassword({ email, password: formData.password })
-      if (error) { setError('Invalid phone number or password'); setLoading(false); return }
-      router.push('/dashboard')
+      const result = await login(formData.phoneNumber, formData.password)
+      if (result?.error) { setError('Invalid phone number or password'); setLoading(false); return }
+      // Server action handles redirect — nothing to do here
     } catch { setError('An unexpected error occurred.'); setLoading(false) }
   }
 
