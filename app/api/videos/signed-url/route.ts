@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { SignJWT, importPKCS8 } from 'jose'
 
-const MUX_SIGNING_KEY_ID = process.env.MUX_SIGNING_KEY_ID!
-const MUX_SIGNING_PRIVATE_KEY = process.env.MUX_SIGNING_PRIVATE_KEY!
+const MUX_SIGNING_KEY_ID = process.env.MUX_SIGNING_KEY_ID
+const MUX_SIGNING_PRIVATE_KEY = process.env.MUX_SIGNING_PRIVATE_KEY
 
 // Token valid for 2 hours — enough for any single study session
 const TOKEN_EXPIRY = '2h'
@@ -74,21 +74,32 @@ export async function GET(request: Request) {
     }
 
     // ── 5. Generate Mux signed JWT ───────────────────────────────────────────
+    // If signing keys are not configured, fall back to unsigned public playback.
+    // This allows videos uploaded as "public" in Mux to still work.
     if (!MUX_SIGNING_KEY_ID || !MUX_SIGNING_PRIVATE_KEY) {
-      console.error('Mux signing keys not configured')
-      return NextResponse.json({ error: 'Video signing not configured' }, { status: 500 })
+      console.warn('Mux signing keys not configured — returning unsigned token fallback')
+      return NextResponse.json({ token: null, unsigned: true })
     }
 
     // The private key from Mux dashboard is base64-encoded PKCS8
-    const privateKeyPem = Buffer.from(MUX_SIGNING_PRIVATE_KEY, 'base64').toString('utf8')
+    let privateKeyPem: string
+    try {
+      privateKeyPem = Buffer.from(MUX_SIGNING_PRIVATE_KEY, 'base64').toString('utf8')
+      if (!privateKeyPem.includes('-----BEGIN')) {
+        throw new Error('Decoded key does not look like a PEM — check MUX_SIGNING_PRIVATE_KEY encoding')
+      }
+    } catch (err) {
+      console.error('Failed to decode Mux private key:', err)
+      return NextResponse.json({ token: null, unsigned: true })
+    }
+
     const privateKey = await importPKCS8(privateKeyPem, 'RS256')
 
     const token = await new SignJWT({
       sub: playbackId,
       aud: 'v',           // 'v' = video playback audience
       kid: MUX_SIGNING_KEY_ID,
-      // Tie token to this specific user — leaking the URL is useless
-      uid: user.id,
+      uid: user.id,       // Tie token to this specific user
     })
       .setProtectedHeader({ alg: 'RS256', typ: 'JWT', kid: MUX_SIGNING_KEY_ID })
       .setIssuedAt()

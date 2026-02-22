@@ -61,8 +61,11 @@ export function VideoPlayer({
           `/api/videos/signed-url?playbackId=${encodeURIComponent(muxPlaybackId)}&videoId=${encodeURIComponent(videoId)}`
         )
         if (!res.ok) throw new Error('Failed to fetch token')
-        const { token } = await res.json()
-        if (!cancelled) setMuxToken(token)
+        const data = await res.json()
+        if (cancelled) return
+        // If signing keys aren't configured, server returns { token: null, unsigned: true }
+        // In that case we use the public (unsigned) Mux HLS URL directly
+        setMuxToken(data.token ?? '__unsigned__')
       } catch {
         if (!cancelled) setTokenError(true)
       }
@@ -121,8 +124,11 @@ export function VideoPlayer({
   // ── Determine source ──────────────────────────────────────────────────────
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null
   // For Mux: build signed HLS URL using the JWT token
+  // '__unsigned__' sentinel means no signing keys — use public HLS URL
   const muxSrc = muxPlaybackId && muxToken
-    ? `https://stream.mux.com/${muxPlaybackId}.m3u8?token=${muxToken}`
+    ? muxToken === '__unsigned__'
+      ? `https://stream.mux.com/${muxPlaybackId}.m3u8`
+      : `https://stream.mux.com/${muxPlaybackId}.m3u8?token=${muxToken}`
     : null
   // Native direct URL (mp4 etc.) — used when no Mux ID and not YouTube
   const nativeSrc = !muxPlaybackId && !youtubeId ? videoUrl : null
