@@ -18,7 +18,7 @@ interface Props {
   src: string          // HLS (.m3u8) or direct mp4 URL
   title: string
   startTime?: number
-  onTimeUpdate?: (currentTime: number) => void
+  onTimeUpdate?: (currentTime: number, duration?: number) => void
   onEnded?: () => void
   onPause?: (currentTime: number) => void
 }
@@ -226,7 +226,7 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
     const video = videoRef.current
     if (!video) return
     setCurrentTime(video.currentTime)
-    onTimeUpdate?.(video.currentTime)
+    onTimeUpdate?.(video.currentTime, video.duration || undefined)
 
     // Update buffered
     if (video.buffered.length > 0) {

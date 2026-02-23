@@ -1,16 +1,23 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export default async function StudentsPage() {
-  const supabase = await createClient()
+  const admin = createAdminClient()
 
-  const { data: students } = await supabase
+  const { data: students } = await admin
     .from('user_profiles')
-    .select(`
-      id, full_name, phone_number, parent_name, parent_phone_number, created_at, is_banned,
-      enrollments (count)
-    `)
+    .select('id, full_name, phone_number, parent_name, parent_phone_number, created_at, is_banned')
     .eq('role', 'student')
     .order('created_at', { ascending: false })
+
+  // Get enrollment counts per student
+  const { data: enrollmentCounts } = await admin
+    .from('enrollments')
+    .select('user_id')
+
+  const countMap: Record<string, number> = {}
+  for (const row of enrollmentCounts ?? []) {
+    countMap[row.user_id] = (countMap[row.user_id] || 0) + 1
+  }
 
   const total = students?.length || 0
   const banned = students?.filter(s => s.is_banned).length || 0
@@ -70,7 +77,7 @@ export default async function StudentsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-[#6A0DAD]/20 text-[#6A0DAD] text-sm font-bold rounded">
-                      {student.enrollments?.[0]?.count || 0} courses
+                      {countMap[student.id] || 0} courses
                     </span>
                   </td>
                   <td className="px-6 py-4 text-[#B3B3B3] text-sm">

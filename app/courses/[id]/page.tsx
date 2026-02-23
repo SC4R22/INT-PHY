@@ -75,8 +75,53 @@ export default async function CourseDetailPage({
   const totalDuration = modules?.reduce((acc, m) =>
     acc + (m.videos?.reduce((s: number, v: any) => s + (v.duration || 0), 0) || 0), 0) || 0
 
+  // Get profile for smart header
+  let profile: any = null
+  if (user) {
+    const { data } = await supabase.from('user_profiles').select('full_name').eq('id', user.id).single()
+    profile = data
+  }
+
   return (
     <div className="bg-[#25292D] min-h-screen">
+
+      {/* Smart header */}
+      {user && profile ? (
+        <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A]">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+            <a href="/dashboard" className="font-payback font-black text-primary text-2xl uppercase italic tracking-wide flex-shrink-0">INT-PHYSICS</a>
+            <nav className="hidden md:flex items-center gap-1">
+              <a href="/dashboard" className="px-4 py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all">Dashboard</a>
+              <a href="/courses" className="px-4 py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all">Browse Courses</a>
+            </nav>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  {profile.full_name?.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:block text-[#EFEFEF] font-semibold text-sm">{profile.full_name}</span>
+              </div>
+              <form action="/api/auth/signout" method="post">
+                <button suppressHydrationWarning type="submit" className="px-3 py-1.5 text-xs font-bold text-[#B3B3B3] hover:text-[#EFEFEF] border border-[#3A3A3A] hover:border-[#555] rounded-lg transition-all">Sign Out</button>
+              </form>
+            </div>
+          </div>
+        </header>
+      ) : (
+        <header className="sticky top-0 z-50 w-full border-b border-[#3A3A3A] bg-[#1e2125]/95 backdrop-blur">
+          <nav className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
+            <a href="/" className="font-payback font-bold text-primary text-2xl">INT-PHYSICS</a>
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="/" className="text-sm font-medium text-[#B3B3B3] hover:text-primary transition-colors">Home</a>
+              <a href="/courses" className="text-sm font-medium text-[#B3B3B3] hover:text-primary transition-colors">Courses</a>
+            </div>
+            <div className="flex items-center space-x-4">
+              <a href="/login" className="text-sm font-medium text-[#B3B3B3] hover:text-primary transition-colors">Log in</a>
+              <a href="/signup" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/80 transition-colors">Sign up</a>
+            </div>
+          </nav>
+        </header>
+      )}
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-primary/30 via-[#1e2125] to-[#25292D] border-b-2 border-primary/20">

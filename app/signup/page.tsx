@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { signup } from "@/app/actions/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -17,6 +17,7 @@ export default function SignUpPage() {
     parentPhoneNumber: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,32 +29,22 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const cleanPhone = formData.phoneNumber.replace(/[^0-9]/g, "");
-      const email = `${cleanPhone}@intphy.app`;
+      // Use the server action — has proper validation, sanitization, and
+      // hardcodes role: "student" server-side so it cannot be tampered with
+      const result = await signup(
+        formData.fullName,
+        formData.phoneNumber,
+        formData.password,
+        formData.parentName || undefined,
+        formData.parentPhoneNumber || undefined,
+      );
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            parent_name: formData.parentName || null,
-            phone_number: formData.phoneNumber,
-            parent_phone_number: formData.parentPhoneNumber || null,
-            role: "student",
-          },
-        },
-      });
-
-      if (error) {
-        setError(error.message);
+      if (result?.error) {
+        setError(result.error);
         setLoading(false);
         return;
       }
-
-      // Full page navigation so server components receive the fresh session cookies
-      window.location.href = "/dashboard";
+      // Server action handles redirect — nothing to do here
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);
@@ -71,6 +62,7 @@ export default function SignUpPage() {
       <div className="max-w-3xl mx-auto mt-8 bg-[#2A2A2A] rounded-xl overflow-hidden shadow-2xl mb-8">
         <div className="flex border-b-4 border-[#6A0DAD]">
           <button
+            suppressHydrationWarning
             onClick={() => setActiveTab("signup")}
             className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
               activeTab === "signup" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
@@ -79,6 +71,7 @@ export default function SignUpPage() {
             Sign-up
           </button>
           <button
+            suppressHydrationWarning
             onClick={() => { setActiveTab("login"); router.push("/login"); }}
             className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
               activeTab === "login" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
@@ -97,34 +90,41 @@ export default function SignUpPage() {
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Name</label>
               <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange}
-                placeholder="Enter your name" required
+                placeholder="Enter your name" required maxLength={100}
                 className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
             </div>
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Parent Name</label>
               <input type="text" name="parentName" value={formData.parentName} onChange={handleInputChange}
-                placeholder="Enter parent's name (optional)"
+                placeholder="Enter parent's name (optional)" maxLength={100}
                 className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
             </div>
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Phone Number</label>
               <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange}
-                placeholder="Enter your phone number" required
+                placeholder="Enter your phone number" required maxLength={20}
                 className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
             </div>
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Parent Phone Number</label>
               <input type="tel" name="parentPhoneNumber" value={formData.parentPhoneNumber} onChange={handleInputChange}
-                placeholder="Enter parent's phone number (optional)"
+                placeholder="Enter parent's phone number (optional)" maxLength={20}
                 className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
             </div>
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Password</label>
-              <input type="password" name="password" value={formData.password} onChange={handleInputChange}
-                placeholder="Create a password" required minLength={8}
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange}
+                  placeholder="Create a password (min 8 characters)" required minLength={8} maxLength={72}
+                  suppressHydrationWarning
+                  className="w-full px-4 py-4 pr-14 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
+                <button type="button" suppressHydrationWarning onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors select-none">
+                  <i className={`fi ${showPassword ? 'fi-rr-eye-crossed' : 'fi-rr-eye'} text-xl`} />
+                </button>
+              </div>
             </div>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading} suppressHydrationWarning
               className="w-full py-5 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg text-xl font-bold hover:bg-[#8B2CAD] transform hover:-translate-y-1 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
               {loading ? "Creating Account..." : "Create Account"}
             </button>

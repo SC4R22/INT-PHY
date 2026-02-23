@@ -52,6 +52,23 @@ export default async function DashboardCoursePage({
     .eq('course_id', id)
     .order('order_index')
 
+  // Fetch files for each module
+  const moduleIds = (modules ?? []).map((m: any) => m.id)
+  let filesMap: Record<string, any[]> = {}
+  if (moduleIds.length > 0) {
+    const { data: filesData } = await supabase
+      .from('module_files')
+      .select('*')
+      .in('module_id', moduleIds)
+      .order('order_index')
+    if (filesData) {
+      for (const f of filesData) {
+        if (!filesMap[f.module_id]) filesMap[f.module_id] = []
+        filesMap[f.module_id].push(f)
+      }
+    }
+  }
+
   // Fetch user progress for this course's videos
   const allVideoIds =
     modules?.flatMap((m) => m.videos?.map((v: any) => v.id) ?? []) ?? []
@@ -255,6 +272,39 @@ export default async function DashboardCoursePage({
                       {modCompleted}/{sortedVideos.length} done
                     </span>
                   </div>
+
+                  {/* Files for this module */}
+                  {(filesMap[mod.id] ?? []).length > 0 && (
+                    <div className="divide-y divide-[#3A3A3A] border-t border-[#3A3A3A]">
+                      {(filesMap[mod.id] ?? []).map((file: any) => (
+                        <a
+                          key={file.id}
+                          href={file.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between px-6 py-3 hover:bg-orange-500/5 transition-colors group"
+                        >
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-orange-500/20 border-2 border-orange-500/40 text-orange-400 text-sm">
+                              {file.file_type?.includes('pdf') ? '📕' : file.file_type?.includes('word') ? '📝' : '📄'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[#EFEFEF] text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-[#555] mt-0.5">
+                                {file.file_type?.includes('pdf') ? 'PDF Document' : file.file_type?.includes('word') ? 'Word Document' : 'File'}
+                                {file.file_size ? ` · ${(file.file_size / (1024 * 1024)).toFixed(1)} MB` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-bold flex-shrink-0 ml-4">
+                            ⬇ Download
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Videos */}
                   {sortedVideos.length > 0 && (

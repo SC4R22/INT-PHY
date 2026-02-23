@@ -10,9 +10,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   // Show public header/footer on home, courses, course detail, and about
   const isPublicRoute =
     pathname === '/' ||
-    pathname === '/about' ||
-    pathname === '/courses' ||
-    pathname.startsWith('/courses/')
+    pathname === '/about'
 
   if (isPublicRoute) {
     return (

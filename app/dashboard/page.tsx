@@ -67,14 +67,15 @@ export default async function DashboardPage() {
       .from('enrollments')
       .select(`
         *,
-        courses:course_id (id, title, description, thumbnail_url, deleted_at)
+        courses:course_id (id, title, description, deleted_at)
       `)
       .eq('user_id', user.id)
       .order('enrolled_at', { ascending: false })
     enrollments = enrollmentData || []
 
-    // Get continue watching — most recently watched incomplete video
-    const { data: progressData } = await admin
+    // Get continue watching — most recently watched video (completed or not)
+    // Priority: incomplete videos first, then fall back to most recently watched completed
+    const { data: incompleteProgress } = await admin
       .from('user_progress')
       .select(`
         *,
@@ -87,10 +88,27 @@ export default async function DashboardPage() {
       .eq('completed', false)
       .order('last_watched_at', { ascending: false })
       .limit(1)
-      .single()
 
-    if (progressData?.videos) {
-      continueWatching = progressData
+    if (incompleteProgress?.[0]?.videos) {
+      continueWatching = incompleteProgress[0]
+    } else {
+      // No incomplete videos — show the most recently watched video (even if completed)
+      const { data: recentProgress } = await admin
+        .from('user_progress')
+        .select(`
+          *,
+          videos:video_id (
+            id, title, duration, module_id,
+            modules:module_id (title, course_id, courses:course_id (id, title))
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('last_watched_at', { ascending: false })
+        .limit(1)
+
+      if (recentProgress?.[0]?.videos) {
+        continueWatching = recentProgress[0]
+      }
     }
 
     // Separate active and expired (deleted) courses
@@ -231,7 +249,7 @@ export default async function DashboardPage() {
 
           {/* Left — Logo / brand */}
           <Link href="/dashboard" className="font-payback font-black text-primary text-2xl uppercase italic tracking-wide flex-shrink-0">
-            INTPHY
+            INT-PHYSICS
           </Link>
 
           {/* Center — Nav links */}
@@ -332,7 +350,9 @@ export default async function DashboardPage() {
 
                 {/* Top overlay: course + video name */}
                 <div className="absolute top-4 left-4 right-4 bg-[#1a1a1a]/85 backdrop-blur-sm rounded-xl p-3">
-                  <p className="text-primary text-xs font-bold uppercase tracking-wider mb-0.5">Continue Watching</p>
+                  <p className="text-primary text-xs font-bold uppercase tracking-wider mb-0.5">
+                    {continueWatching.completed ? '↩ Last Watched' : '▶ Continue Watching'}
+                  </p>
                   {course?.title && (
                     <p className="text-[#B3B3B3] text-xs mb-1 truncate">{course.title}</p>
                   )}

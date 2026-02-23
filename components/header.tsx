@@ -1,17 +1,16 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import Link from "next/link";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Courses', href: '/courses' },
-    { name: 'About', href: '/about' },
-  ]
+    { name: "Home", href: "/" },
+    { name: "Courses", href: "/courses" },
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#3A3A3A] bg-[#1e2125]/95 backdrop-blur">
@@ -19,7 +18,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-2xl lg:text-3xl font-payback font-bold text-primary">
-            Physics
+            INT-PHYSICS
           </span>
         </Link>
 
@@ -100,5 +99,5 @@ export function Header() {
         </div>
       )}
     </header>
-  )
+  );
 }

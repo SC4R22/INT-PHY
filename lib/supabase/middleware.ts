@@ -19,7 +19,14 @@ export async function updateSession(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
             supabaseResponse = NextResponse.next({ request })
             cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
+              supabaseResponse.cookies.set(name, value, {
+                ...options,
+                // Keep session alive for 30 days — user stays logged in across browser closes
+                maxAge: 60 * 60 * 24 * 30,
+                sameSite: 'lax',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+              })
             )
           },
         },
@@ -42,12 +49,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // Ban check is handled inside dashboard layout/pages — not here
-    // Doing DB queries in middleware on every request is too heavy for Edge Runtime
-
   } catch (error) {
-    // If middleware fails for any reason, allow the request through
-    // rather than showing a 500 to the user
     console.error('Middleware error:', error)
   }
 

@@ -12,6 +12,7 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login')
   const [formData, setFormData] = useState({ phoneNumber: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -56,9 +57,15 @@ function LoginContent() {
             </div>
             <div>
               <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Password</label>
-              <input key="login-password" type="password" name="password" value={formData.password || ''} onChange={handleInputChange}
-                placeholder="Enter your password" required autoComplete="current-password" data-form-type="other" data-lpignore="true" data-1p-ignore="true"
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" suppressHydrationWarning />
+              <div className="relative">
+                <input key="login-password" type={showPassword ? 'text' : 'password'} name="password" value={formData.password || ''} onChange={handleInputChange}
+                  placeholder="Enter your password" required autoComplete="current-password" data-form-type="other" data-lpignore="true" data-1p-ignore="true"
+                  className="w-full px-4 py-4 pr-14 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" suppressHydrationWarning />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} suppressHydrationWarning
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors select-none">
+                  <i suppressHydrationWarning className={`fi ${showPassword ? 'fi-rr-eye-crossed' : 'fi-rr-eye'} text-xl`} />
+                </button>
+              </div>
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-5 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg text-xl font-bold hover:bg-[#8B2CAD] transform hover:-translate-y-1 transition-all shadow-lg hover:shadow-[#6A0DAD]/40 disabled:opacity-60 disabled:cursor-not-allowed" suppressHydrationWarning>

@@ -14,6 +14,14 @@ export default async function CoursesPage({
   const { q } = await searchParams
   const supabase = await createClient()
 
+  // Check if user is logged in — determines which header to show
+  const { data: { user } } = await supabase.auth.getUser()
+  let profile: any = null
+  if (user) {
+    const { data } = await supabase.from('user_profiles').select('full_name, role').eq('id', user.id).single()
+    profile = data
+  }
+
   let query = supabase
     .from('courses')
     .select('id, title, description, price_cash, is_free, created_at')
@@ -29,6 +37,61 @@ export default async function CoursesPage({
 
   return (
     <div className="bg-[#25292D] min-h-screen">
+
+      {/* Smart header — dashboard nav if logged in, public nav if not */}
+      {user && profile ? (
+        <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A]">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+            <Link href="/dashboard" className="font-payback font-black text-primary text-2xl uppercase italic tracking-wide flex-shrink-0">
+              INT-PHYSICS
+            </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <Link href="/dashboard" className="px-4 py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all">
+                Dashboard
+              </Link>
+              <Link href="/courses" className="px-4 py-2 rounded-lg text-sm font-semibold text-primary bg-primary/10 transition-all">
+                Browse Courses
+              </Link>
+            </nav>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  {profile.full_name?.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:block text-[#EFEFEF] font-semibold text-sm">{profile.full_name}</span>
+              </div>
+              <form action="/api/auth/signout" method="post">
+              <button suppressHydrationWarning type="submit" className="px-3 py-1.5 text-xs font-bold text-[#B3B3B3] hover:text-[#EFEFEF] border border-[#3A3A3A] hover:border-[#555] rounded-lg transition-all">
+              Sign Out
+              </button>
+              </form>
+            </div>
+          </div>
+          {/* Mobile nav */}
+          <div className="md:hidden border-t border-[#3A3A3A] px-4 py-2 flex gap-2">
+            <Link href="/dashboard" className="flex-1 text-center py-2 rounded-lg text-sm font-semibold text-[#B3B3B3] hover:text-[#EFEFEF] hover:bg-[#2A2A2A] transition-all">
+              Dashboard
+            </Link>
+            <Link href="/courses" className="flex-1 text-center py-2 rounded-lg text-sm font-semibold text-primary bg-primary/10 transition-all">
+              Browse Courses
+            </Link>
+          </div>
+        </header>
+      ) : (
+        <header className="sticky top-0 z-50 w-full border-b border-[#3A3A3A] bg-[#1e2125]/95 backdrop-blur">
+          <nav className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-16">
+            <Link href="/" className="font-payback font-bold text-primary text-2xl">INT-PHYSICS</Link>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="/" className="text-sm font-medium text-[#B3B3B3] hover:text-primary transition-colors">Home</Link>
+              <Link href="/courses" className="text-sm font-medium text-primary transition-colors">Courses</Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/login" className="text-sm font-medium text-[#B3B3B3] hover:text-primary transition-colors">Log in</Link>
+              <Link href="/signup" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/80 transition-colors">Sign up</Link>
+            </div>
+          </nav>
+        </header>
+      )}
 
       {/* Header bar */}
       <div className="bg-gradient-to-r from-primary to-primary/70 py-16">
@@ -49,6 +112,7 @@ export default async function CoursesPage({
               name="q"
               defaultValue={q || ''}
               placeholder="Search courses..."
+              suppressHydrationWarning
               className="w-full pl-12 pr-4 py-4 bg-[#2A2A2A] border-2 border-[#3A3A3A] focus:border-primary rounded-xl text-[#EFEFEF] outline-none placeholder:text-gray-500 text-lg transition-colors"
             />
             {q && (

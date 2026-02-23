@@ -39,10 +39,10 @@ export default async function HomePage() {
                 </h1>
               </div>
 
-              <p className="text-lg lg:text-xl text-[#B3B3B3] max-w-lg leading-relaxed">
+              {/* <p className="text-lg lg:text-xl text-[#B3B3B3] max-w-lg leading-relaxed">
                 Learn physics with modern teaching technique, Structured
                 revisions, and a learning system built around your success.
-              </p>
+              </p> */}
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link

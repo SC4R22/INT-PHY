@@ -42,7 +42,7 @@ export default async function WatchPage({
     .eq('course_id', courseId)
     .single()
 
-  if (!enrollment) redirect(`/courses/${courseId}`)
+    if (!enrollment) redirect(`/courses/${courseId}`)
 
   // If course is deleted, redirect to the expired view — videos are not accessible
   const { data: courseCheck } = await supabase

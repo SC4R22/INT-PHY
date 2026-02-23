@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
 import { generateAccessCodes, deleteAccessCode } from '@/app/actions/access-codes'
 
 interface Course { id: string; title: string }
@@ -25,25 +24,14 @@ export default function AccessCodesPage() {
   // Generate form
   const [genForm, setGenForm] = useState({ course_id: '', quantity: '1', expires_in_days: '' })
 
-  const supabase = useMemo(() => createClient(), [])
-
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data: coursesData } = await supabase.from('courses').select('id, title').is('deleted_at', null).order('title')
-    setCourses(coursesData || [])
-
-    const { data: codesData } = await supabase
-      .from('access_codes')
-      .select(`
-        id, code, course_id, is_used, created_at, expires_at,
-        course:course_id (title),
-        used_by_profile:used_by (full_name, phone_number)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(200)
-    setCodes((codesData as any) || [])
+    const res = await fetch('/api/admin/codes')
+    const json = await res.json()
+    setCourses(json.courses || [])
+    setCodes(json.codes || [])
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 

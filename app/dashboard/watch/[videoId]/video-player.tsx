@@ -44,8 +44,10 @@ export function VideoPlayer({
 }: Props) {
   const router = useRouter()
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoCompletedRef = useRef(false) // prevent firing auto-complete multiple times
   const [completed, setCompleted] = useState(isCompleted)
   const [saving, setSaving] = useState(false)
+  const [justToggled, setJustToggled] = useState<'marked' | 'unmarked' | null>(null)
 
   // ── Signed Mux token ──────────────────────────────────────────────────────
   const [muxToken, setMuxToken] = useState<string | null>(null)
@@ -53,7 +55,6 @@ export function VideoPlayer({
 
   useEffect(() => {
     if (!muxPlaybackId) return
-
     let cancelled = false
     const fetchToken = async () => {
       try {
@@ -63,14 +64,11 @@ export function VideoPlayer({
         if (!res.ok) throw new Error('Failed to fetch token')
         const data = await res.json()
         if (cancelled) return
-        // If signing keys aren't configured, server returns { token: null, unsigned: true }
-        // In that case we use the public (unsigned) Mux HLS URL directly
         setMuxToken(data.token ?? '__unsigned__')
       } catch {
         if (!cancelled) setTokenError(true)
       }
     }
-
     fetchToken()
     return () => { cancelled = true }
   }, [muxPlaybackId, videoId])
@@ -96,20 +94,53 @@ export function VideoPlayer({
     router.refresh()
   }, [videoId, router])
 
-  const handleTimeUpdate = useCallback((currentTime: number) => {
+  // ── Auto-complete at 90% or on ended ─────────────────────────────────────
+  const handleTimeUpdate = useCallback((currentTime: number, duration?: number) => {
+    // Auto-mark complete when user reaches 90% of video
+    if (
+      !completed &&
+      !autoCompletedRef.current &&
+      duration &&
+      duration > 0 &&
+      currentTime / duration >= 0.9
+    ) {
+      autoCompletedRef.current = true
+      setCompleted(true)
+      setJustToggled('marked')
+      saveProgress(currentTime, true)
+      setTimeout(() => setJustToggled(null), 3000)
+      return
+    }
+
+    // Periodic save every 10s
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => saveProgress(currentTime, completed), 10_000)
   }, [completed, saveProgress])
 
   const handleEnded = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    if (!completed) {
+      autoCompletedRef.current = true
+      setCompleted(true)
+      setJustToggled('marked')
+      setTimeout(() => setJustToggled(null), 3000)
+    }
     saveProgress(0, true)
-    setCompleted(true)
-  }, [saveProgress])
+  }, [completed, saveProgress])
 
   const handlePause = useCallback((currentTime: number) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveProgress(currentTime, completed)
+  }, [completed, saveProgress])
+
+  // ── Toggle complete / uncomplete ──────────────────────────────────────────
+  const handleToggleComplete = useCallback(() => {
+    const newState = !completed
+    setCompleted(newState)
+    autoCompletedRef.current = newState // if manually unmarked, allow auto-complete again on next watch
+    setJustToggled(newState ? 'marked' : 'unmarked')
+    saveProgress(0, newState)
+    setTimeout(() => setJustToggled(null), 3000)
   }, [completed, saveProgress])
 
   // ── Next video ────────────────────────────────────────────────────────────
@@ -123,23 +154,18 @@ export function VideoPlayer({
 
   // ── Determine source ──────────────────────────────────────────────────────
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null
-  // For Mux: build signed HLS URL using the JWT token
-  // '__unsigned__' sentinel means no signing keys — use public HLS URL
   const muxSrc = muxPlaybackId && muxToken
     ? muxToken === '__unsigned__'
       ? `https://stream.mux.com/${muxPlaybackId}.m3u8`
       : `https://stream.mux.com/${muxPlaybackId}.m3u8?token=${muxToken}`
     : null
-  // Native direct URL (mp4 etc.) — used when no Mux ID and not YouTube
   const nativeSrc = !muxPlaybackId && !youtubeId ? videoUrl : null
-
   const videoSrc = muxSrc ?? nativeSrc
 
   return (
     <div className="flex flex-col flex-1">
       {/* ── Player ── */}
       {muxPlaybackId ? (
-        // Mux video — wait for signed token before rendering
         tokenError ? (
           <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
             <div className="text-center text-[#B3B3B3]">
@@ -148,7 +174,6 @@ export function VideoPlayer({
             </div>
           </div>
         ) : !muxToken ? (
-          // Loading token
           <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
             <div className="w-10 h-10 border-4 border-[#6A0DAD] border-t-transparent rounded-full animate-spin" />
           </div>
@@ -163,7 +188,6 @@ export function VideoPlayer({
           />
         )
       ) : videoSrc ? (
-        // Native mp4/HLS (non-Mux)
         <CustomVideoPlayer
           src={videoSrc}
           title={videoTitle}
@@ -173,7 +197,6 @@ export function VideoPlayer({
           onPause={handlePause}
         />
       ) : youtubeId ? (
-        // YouTube — embedded iframe (controls are YouTube's own)
         <div className="relative bg-black w-full" style={{ aspectRatio: '16/9' }}>
           <iframe
             key={youtubeId}
@@ -185,7 +208,6 @@ export function VideoPlayer({
           />
         </div>
       ) : (
-        // No video at all
         <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
           <div className="text-center text-[#B3B3B3]">
             <p className="text-4xl mb-3">🎬</p>
@@ -200,21 +222,43 @@ export function VideoPlayer({
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-[#EFEFEF]">{videoTitle}</h1>
             {saving && <p className="text-xs text-[#B3B3B3] mt-1 animate-pulse">Saving progress...</p>}
-            {completed && (
-              <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-green-500/20 text-green-400 text-xs font-bold rounded-full border border-green-500/40">
-                ✓ Completed
-              </span>
+            {/* Toast-style feedback */}
+            {justToggled === 'marked' && (
+              <p className="text-xs text-green-400 mt-1 font-semibold animate-pulse">✓ Marked as complete!</p>
+            )}
+            {justToggled === 'unmarked' && (
+              <p className="text-xs text-yellow-400 mt-1 font-semibold animate-pulse">↩ Marked as incomplete</p>
             )}
           </div>
 
-          {!completed && (
-            <button
-              onClick={() => { saveProgress(0, true); setCompleted(true) }}
-              className="flex-shrink-0 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 text-sm font-bold rounded-lg transition-colors"
-            >
-              ✓ Mark Complete
-            </button>
-          )}
+          {/* Toggle button — always visible, switches between complete/uncomplete */}
+          <button
+            onClick={handleToggleComplete}
+            disabled={saving}
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+              completed
+                ? 'bg-green-500/20 hover:bg-red-500/10 border-green-500/40 hover:border-red-500/40 text-green-400 hover:text-red-400'
+                : 'bg-[#2A2A2A] hover:bg-green-500/20 border-[#3A3A3A] hover:border-green-500/40 text-[#B3B3B3] hover:text-green-400'
+            }`}
+          >
+            {completed ? (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="hidden sm:inline">Completed</span>
+                <span className="sm:hidden">✓</span>
+                <span className="hidden sm:inline text-xs opacity-60 font-normal">· click to undo</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+                Mark Complete
+              </>
+            )}
+          </button>
         </div>
       </div>
 

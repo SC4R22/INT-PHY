@@ -107,8 +107,8 @@ export async function GET(request: Request) {
       .sign(privateKey)
 
     return NextResponse.json({ token })
-  } catch (err) {
-    console.error('Signed URL error:', err)
-    return NextResponse.json({ error: 'Failed to generate signed token' }, { status: 500 })
+  } catch (err: any) {
+    console.error('Signed URL error:', err?.message ?? err)
+    return NextResponse.json({ error: 'Failed to generate signed token', detail: err?.message ?? String(err) }, { status: 500 })
   }
 }

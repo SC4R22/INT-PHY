@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
-  // Get total counts
+  // Get total counts — query underlying tables directly for reliability
   const { count: totalStudents } = await supabase
     .from('user_profiles')
     .select('*', { count: 'exact', head: true })
@@ -19,35 +19,57 @@ export default async function AdminDashboard() {
     .from('enrollments')
     .select('*', { count: 'exact', head: true })
 
-  // Active students: new enrollments in last 7 days (avoids relying on last_activity_at column)
+  // Active students: new enrollments in last 7 days
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { count: activeStudents } = await supabase
     .from('enrollments')
     .select('*', { count: 'exact', head: true })
     .gte('enrolled_at', sevenDaysAgo)
 
-  // Get recent enrollments
-  const { data: recentEnrollments } = await supabase
+  // Get recent enrollments with user and course info
+  const { data: recentEnrollmentsRaw } = await supabase
     .from('enrollments')
-    .select(`
-      *,
-      user:user_id (full_name, phone_number),
-      course:course_id (title)
-    `)
+    .select('id, enrolled_at, user_id, course_id')
     .order('enrolled_at', { ascending: false })
     .limit(5)
 
+  // Fetch related profile and course names
+  const userIds = [...new Set((recentEnrollmentsRaw ?? []).map((e: any) => e.user_id))]
+  const courseIds = [...new Set((recentEnrollmentsRaw ?? []).map((e: any) => e.course_id))]
+
+  const { data: profilesData } = userIds.length
+    ? await supabase.from('user_profiles').select('id, full_name, phone_number').in('id', userIds)
+    : { data: [] }
+
+  const { data: coursesData } = courseIds.length
+    ? await supabase.from('courses').select('id, title').in('id', courseIds)
+    : { data: [] }
+
+  const profileMap = new Map((profilesData ?? []).map((p: any) => [p.id, p]))
+  const courseMap = new Map((coursesData ?? []).map((c: any) => [c.id, c]))
+
+  const recentEnrollments = (recentEnrollmentsRaw ?? []).map((e: any) => ({
+    ...e,
+    user: profileMap.get(e.user_id) ?? null,
+    course: courseMap.get(e.course_id) ?? null,
+  }))
+
+  // Top courses from the analytics view
   const { data: topCoursesData } = await supabase
     .from('course_analytics')
-    .select('course_id, total_enrollments, courses:course_id(title)')
+    .select('course_id, total_enrollments')
     .order('total_enrollments', { ascending: false })
     .limit(5)
 
-  const topCourses = (topCoursesData ?? []).map((row: any) => ({
-    courseId: row.course_id,
-    title: row.courses?.title ?? 'Unknown',
-    count: row.total_enrollments ?? 0,
-  }))
+  const topCoursesWithTitles = await Promise.all(
+    (topCoursesData ?? []).map(async (row: any) => {
+      const course = courseMap.get(row.course_id)
+      if (course) return { courseId: row.course_id, title: (course as any).title, count: row.total_enrollments }
+      // Fetch if not already in map
+      const { data } = await supabase.from('courses').select('title').eq('id', row.course_id).single()
+      return { courseId: row.course_id, title: data?.title ?? 'Unknown', count: row.total_enrollments ?? 0 }
+    })
+  )
 
   return (
     <div className="p-8">
@@ -108,10 +130,10 @@ export default async function AdminDashboard() {
                 >
                   <div>
                     <p className="text-[#EFEFEF] font-semibold">
-                      {enrollment.user?.full_name}
+                      {enrollment.user?.full_name ?? '—'}
                     </p>
                     <p className="text-[#B3B3B3] text-sm">
-                      {enrollment.course?.title}
+                      {enrollment.course?.title ?? '—'}
                     </p>
                   </div>
                   <span className="text-[#6A0DAD] text-sm">
@@ -133,8 +155,8 @@ export default async function AdminDashboard() {
             Top Courses by Enrollment
           </h2>
           <div className="space-y-3">
-            {topCourses.length > 0 ? (
-              topCourses.map((course, index) => (
+            {topCoursesWithTitles.length > 0 ? (
+              topCoursesWithTitles.map((course, index) => (
                 <div
                   key={course.courseId}
                   className="p-4 bg-[#3A3A3A] rounded-lg flex justify-between items-center"

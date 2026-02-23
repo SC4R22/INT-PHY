@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+// Note: createClient is still used by the access code (redeem) flow below
 
 interface Props {
   courseId: string
@@ -27,33 +28,27 @@ export function EnrollButton({ courseId, courseTitle, isFree, isLoggedIn, isEnro
       return
     }
 
-    // Free course: skip modal, enroll directly
+    // Free course: enroll via server API (bypasses RLS issues)
     if (isFree) {
       setLoading(true)
       setError(null)
       try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/login'); return }
+        const res = await fetch('/api/enroll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ courseId }),
+        })
+        const data = await res.json()
 
-        const { error: enrollError } = await supabase
-          .from('enrollments')
-          .insert({ user_id: user.id, course_id: courseId })
-
-        if (enrollError) {
-          if (enrollError.message.includes('duplicate') || enrollError.message.includes('unique')) {
-            setSuccess(true)
-            toast.success('Already enrolled! Redirecting...')
-          } else {
-            setError(enrollError.message)
-            toast.error(enrollError.message)
-            setLoading(false)
-            return
-          }
-        } else {
-          setSuccess(true)
-          toast.success(`You're enrolled in ${courseTitle}!`)
+        if (!res.ok) {
+          setError(data.error || 'Enrollment failed. Please try again.')
+          toast.error(data.error || 'Enrollment failed.')
+          setLoading(false)
+          return
         }
+
+        setSuccess(true)
+        toast.success(data.alreadyEnrolled ? 'Already enrolled! Redirecting...' : `You're enrolled in ${courseTitle}!`)
 
         setTimeout(() => {
           router.push('/dashboard')

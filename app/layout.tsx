@@ -39,6 +39,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css" />
+      </head>
       <body className={`${inter.variable} ${bebasNeue.variable} antialiased bg-[#25292D] text-[#EFEFEF]`}>
         <ConditionalLayout>
           {children}

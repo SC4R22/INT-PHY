@@ -1,17 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
 
-async function handleSignOut(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const supabase = await createClient()
   await supabase.auth.signOut()
   return NextResponse.redirect(new URL('/login', request.url))
 }
 
-export async function POST(request: NextRequest) {
-  return handleSignOut(request)
-}
-
-// Also handle GET so <Link href="/api/auth/signout"> and direct navigation works
-export async function GET(request: NextRequest) {
-  return handleSignOut(request)
+// GET is intentionally not supported — sign-out must be a POST to prevent
+// CSRF logout attacks via <img src="/api/auth/signout"> on malicious pages.
+export async function GET() {
+  return new Response('Method Not Allowed — use POST to sign out', { status: 405 })
 }
