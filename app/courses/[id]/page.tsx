@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { EnrollButton } from './enroll-button'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
