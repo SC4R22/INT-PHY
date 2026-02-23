@@ -253,27 +253,27 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <button suppressHydrationWarning onClick={() => router.push('/admin/courses')} className="text-[#B3B3B3] hover:text-[#EFEFEF] flex items-center gap-2 mb-4 transition-colors">
+      <div className="mb-6 md:mb-8">
+        <button suppressHydrationWarning onClick={() => router.push('/admin/courses')} className="text-[#B3B3B3] hover:text-[#EFEFEF] flex items-center gap-2 mb-4 transition-colors text-sm">
           ← Back to Courses
         </button>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-1 leading-tight truncate">
               {course?.title}
             </h1>
-            <p className="text-[#B3B3B3]">Manage modules, videos and files</p>
+            <p className="text-[#B3B3B3] text-sm">Manage modules, videos and files</p>
           </div>
-          <div className="flex gap-3 items-center">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${course?.published ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}>
+          <div className="flex gap-2 items-center flex-shrink-0">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${course?.published ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}>
               {course?.published ? 'PUBLISHED' : 'DRAFT'}
             </span>
             <button
               suppressHydrationWarning
               onClick={() => router.push(`/admin/courses/${courseId}/edit`)}
-              className="px-4 py-2 bg-[#3A3A3A] text-[#EFEFEF] rounded-lg font-semibold hover:bg-[#4A4A4A] transition-all text-sm"
+              className="px-3 py-2 bg-[#3A3A3A] text-[#EFEFEF] rounded-lg font-semibold hover:bg-[#4A4A4A] transition-all text-sm whitespace-nowrap"
             >
               Edit Details
             </button>
@@ -288,27 +288,27 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-[#6A0DAD]">
-          <p className="text-[#B3B3B3] text-sm">Modules</p>
-          <p className="text-3xl font-bold text-[#EFEFEF]">{modules.length}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+        <div className="bg-[#2A2A2A] rounded-lg p-3 md:p-4 border-l-4 border-[#6A0DAD]">
+          <p className="text-[#B3B3B3] text-xs md:text-sm">Modules</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#EFEFEF]">{modules.length}</p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-blue-500">
-          <p className="text-[#B3B3B3] text-sm">Total Videos</p>
-          <p className="text-3xl font-bold text-[#EFEFEF]">{modules.reduce((acc, m) => acc + m.videos.length, 0)}</p>
+        <div className="bg-[#2A2A2A] rounded-lg p-3 md:p-4 border-l-4 border-blue-500">
+          <p className="text-[#B3B3B3] text-xs md:text-sm">Total Videos</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#EFEFEF]">{modules.reduce((acc, m) => acc + m.videos.length, 0)}</p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-orange-500">
-          <p className="text-[#B3B3B3] text-sm">Total Files</p>
-          <p className="text-3xl font-bold text-[#EFEFEF]">{modules.reduce((acc, m) => acc + m.files.length, 0)}</p>
+        <div className="bg-[#2A2A2A] rounded-lg p-3 md:p-4 border-l-4 border-orange-500">
+          <p className="text-[#B3B3B3] text-xs md:text-sm">Total Files</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#EFEFEF]">{modules.reduce((acc, m) => acc + m.files.length, 0)}</p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-green-500">
-          <p className="text-[#B3B3B3] text-sm">Price</p>
-          <p className="text-3xl font-bold text-[#EFEFEF]">{course?.is_free ? 'Free' : course?.price_cash != null ? `${course.price_cash} EGP` : '—'}</p>
+        <div className="bg-[#2A2A2A] rounded-lg p-3 md:p-4 border-l-4 border-green-500">
+          <p className="text-[#B3B3B3] text-xs md:text-sm">Price</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#EFEFEF]">{course?.is_free ? 'Free' : course?.price_cash != null ? `${course.price_cash} EGP` : '—'}</p>
         </div>
       </div>
 
       {/* Modules list */}
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 md:space-y-4 mb-6">
         {modules.length === 0 && (
           <div className="text-center py-12 text-[#B3B3B3]">
             No modules yet — add one below to get started
@@ -318,30 +318,32 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
         {modules.map((mod, modIndex) => (
           <div key={mod.id} className="bg-[#2A2A2A] rounded-xl overflow-hidden border-2 border-[#3A3A3A]">
             {/* Module header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-[#3A3A3A]">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 px-4 md:px-6 py-4 bg-[#3A3A3A] sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 <span className="w-8 h-8 bg-[#6A0DAD] rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {modIndex + 1}
                 </span>
-                <h3 className="text-[#EFEFEF] font-bold text-lg">{mod.title}</h3>
-                <span className="text-[#B3B3B3] text-sm">
-                  ({mod.videos.length} video{mod.videos.length !== 1 ? 's' : ''}, {mod.files.length} file{mod.files.length !== 1 ? 's' : ''})
-                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[#EFEFEF] font-bold text-base md:text-lg leading-tight truncate">{mod.title}</h3>
+                  <span className="text-[#B3B3B3] text-xs">
+                    ({mod.videos.length} video{mod.videos.length !== 1 ? 's' : ''}, {mod.files.length} file{mod.files.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   suppressHydrationWarning
                   onClick={() => {
                     if (activeModuleId === mod.id) { resetVideoForm() }
                     else { resetVideoForm(); resetFileForm(); setActiveModuleId(mod.id) }
                   }}
-                  className={`px-3 py-1 text-sm font-semibold rounded transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 py-2 text-xs md:text-sm font-semibold rounded transition-colors ${
                     activeModuleId === mod.id
-                      ? 'bg-[#3A3A3A] text-[#B3B3B3] border border-[#555]'
+                      ? 'bg-[#2A2A2A] text-[#B3B3B3] border border-[#555]'
                       : 'bg-[#6A0DAD] text-white hover:bg-[#8B2CAD]'
                   }`}
                 >
-                  {activeModuleId === mod.id ? '✕ Cancel Video' : '🎬 Add Video'}
+                  {activeModuleId === mod.id ? '✕ Video' : '🎬 Add Video'}
                 </button>
                 <button
                   suppressHydrationWarning
@@ -349,18 +351,18 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                     if (activeFileModuleId === mod.id) { resetFileForm() }
                     else { resetFileForm(); resetVideoForm(); setActiveFileModuleId(mod.id) }
                   }}
-                  className={`px-3 py-1 text-sm font-semibold rounded transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 py-2 text-xs md:text-sm font-semibold rounded transition-colors ${
                     activeFileModuleId === mod.id
-                      ? 'bg-[#3A3A3A] text-[#B3B3B3] border border-[#555]'
+                      ? 'bg-[#2A2A2A] text-[#B3B3B3] border border-[#555]'
                       : 'bg-orange-600 text-white hover:bg-orange-500'
                   }`}
                 >
-                  {activeFileModuleId === mod.id ? '✕ Cancel File' : '📎 Add File'}
+                  {activeFileModuleId === mod.id ? '✕ File' : '📎 Add File'}
                 </button>
                 <button
                   suppressHydrationWarning
                   onClick={() => deleteModule(mod.id)}
-                  className="px-3 py-1 bg-red-600/30 text-red-400 text-sm font-semibold rounded hover:bg-red-600/50 transition-colors"
+                  className="px-3 py-2 bg-red-600/30 text-red-400 text-xs md:text-sm font-semibold rounded hover:bg-red-600/50 transition-colors"
                 >
                   Delete
                 </button>
@@ -371,13 +373,13 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
             {mod.videos.length > 0 && (
               <div className="divide-y divide-[#3A3A3A]">
                 {mod.videos.map((video, vidIndex) => (
-                  <div key={video.id} className="flex items-center justify-between px-6 py-3 hover:bg-[#3A3A3A]/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[#6A0DAD] font-bold text-sm w-6">{vidIndex + 1}.</span>
-                      <span className="text-lg">🎬</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-[#EFEFEF] font-semibold">{video.title}</p>
+                  <div key={video.id} className="flex items-center justify-between px-4 md:px-6 py-3 hover:bg-[#3A3A3A]/50 transition-colors gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      <span className="text-[#6A0DAD] font-bold text-sm w-5 flex-shrink-0">{vidIndex + 1}.</span>
+                      <span className="text-base md:text-lg flex-shrink-0">🎬</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[#EFEFEF] font-semibold text-sm md:text-base truncate">{video.title}</p>
                           {video.mux_playback_id ? (
                             <span className="px-2 py-0.5 bg-[#6A0DAD]/30 text-[#B3B3B3] text-xs font-bold rounded-full border border-[#6A0DAD]/40">MUX</span>
                           ) : video.video_url?.includes('youtube') ? (
@@ -387,17 +389,17 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                           ) : null}
                         </div>
                         {video.video_url && (
-                          <p className="text-[#555] text-xs truncate max-w-md">{video.video_url}</p>
+                          <p className="text-[#555] text-xs truncate max-w-[140px] md:max-w-md">{video.video_url}</p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                       {video.duration && (
-                        <span className="text-[#B3B3B3] text-sm">
+                        <span className="text-[#B3B3B3] text-xs md:text-sm hidden sm:inline">
                           {Math.floor(video.duration / 60)}m {video.duration % 60}s
                         </span>
                       )}
-                      <button suppressHydrationWarning onClick={() => deleteVideo(video.id)} className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors">
+                      <button suppressHydrationWarning onClick={() => deleteVideo(video.id)} className="text-red-400 hover:text-red-300 text-xs md:text-sm font-semibold transition-colors whitespace-nowrap">
                         Remove
                       </button>
                     </div>
@@ -410,27 +412,27 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
             {mod.files.length > 0 && (
               <div className="divide-y divide-[#3A3A3A] border-t border-[#3A3A3A]">
                 {mod.files.map((file, fileIndex) => (
-                  <div key={file.id} className="flex items-center justify-between px-6 py-3 hover:bg-orange-500/5 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className="text-orange-500 font-bold text-sm w-6">{fileIndex + 1}.</span>
-                      <span className="text-xl">{fileIcon(file.file_type)}</span>
-                      <div>
-                        <p className="text-[#EFEFEF] font-semibold">{file.name}</p>
+                  <div key={file.id} className="flex items-center justify-between px-4 md:px-6 py-3 hover:bg-orange-500/5 transition-colors gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      <span className="text-orange-500 font-bold text-sm w-5 flex-shrink-0">{fileIndex + 1}.</span>
+                      <span className="text-lg md:text-xl flex-shrink-0">{fileIcon(file.file_type)}</span>
+                      <div className="min-w-0">
+                        <p className="text-[#EFEFEF] font-semibold text-sm md:text-base truncate">{file.name}</p>
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 bg-orange-600/20 text-orange-400 text-xs font-bold rounded-full border border-orange-600/30">
                             {file.file_type?.includes('pdf') ? 'PDF' : file.file_type?.includes('word') ? 'DOC' : 'FILE'}
                           </span>
                           {file.file_size && (
-                            <span className="text-[#555] text-xs">{formatBytes(file.file_size)}</span>
+                            <span className="text-[#555] text-xs hidden sm:inline">{formatBytes(file.file_size)}</span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-[#B3B3B3] hover:text-[#EFEFEF] text-sm transition-colors">
+                    <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                      <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="text-[#B3B3B3] hover:text-[#EFEFEF] text-xs md:text-sm transition-colors whitespace-nowrap">
                         Preview
                       </a>
-                      <button suppressHydrationWarning onClick={() => deleteFile(file.id, file.file_url)} className="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors">
+                      <button suppressHydrationWarning onClick={() => deleteFile(file.id, file.file_url)} className="text-red-400 hover:text-red-300 text-xs md:text-sm font-semibold transition-colors whitespace-nowrap">
                         Remove
                       </button>
                     </div>
@@ -448,7 +450,7 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
 
             {/* Add video inline form */}
             {activeModuleId === mod.id && (
-              <div className="px-6 py-5 bg-[#1a1a1a] border-t-2 border-[#6A0DAD]">
+              <div className="px-4 md:px-6 py-5 bg-[#1a1a1a] border-t-2 border-[#6A0DAD]">
                 <p className="text-[#B3B3B3] text-sm font-bold uppercase tracking-wider mb-4">🎬 Add New Video</p>
                 <div className="space-y-4">
                   <input
@@ -519,7 +521,7 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
 
             {/* Add file inline form */}
             {activeFileModuleId === mod.id && (
-              <div className="px-6 py-5 bg-[#1a1a1a] border-t-2 border-orange-600">
+              <div className="px-4 md:px-6 py-5 bg-[#1a1a1a] border-t-2 border-orange-600">
                 <p className="text-orange-400 text-sm font-bold uppercase tracking-wider mb-4">📎 Add File (PDF, Word, Image)</p>
                 <div className="space-y-4">
                   <input
@@ -604,22 +606,22 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Add module */}
-      <div className="bg-[#2A2A2A] rounded-xl p-6 border-2 border-dashed border-[#3A3A3A] hover:border-[#6A0DAD] transition-colors">
+      <div className="bg-[#2A2A2A] rounded-xl p-4 md:p-6 border-2 border-dashed border-[#3A3A3A] hover:border-[#6A0DAD] transition-colors">
         <p className="text-[#B3B3B3] text-sm font-bold uppercase tracking-wider mb-3">Add New Module</p>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
             placeholder="Module title, e.g. Chapter 1: Introduction to Mechanics"
             value={newModuleTitle}
             onChange={e => setNewModuleTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addModule()}
-            className="flex-1 px-4 py-3 bg-[#1a1a1a] border-2 border-[#3A3A3A] focus:border-[#6A0DAD] rounded-lg text-[#EFEFEF] outline-none transition-colors placeholder:text-gray-600"
+            className="flex-1 px-4 py-3 bg-[#1a1a1a] border-2 border-[#3A3A3A] focus:border-[#6A0DAD] rounded-lg text-[#EFEFEF] outline-none transition-colors placeholder:text-gray-600 text-sm"
           />
           <button
             suppressHydrationWarning
             onClick={addModule}
             disabled={addingModule || !newModuleTitle.trim()}
-            className="px-6 py-3 bg-[#6A0DAD] text-white font-bold rounded-lg hover:bg-[#8B2CAD] transition-all disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-3 bg-[#6A0DAD] text-white font-bold rounded-lg hover:bg-[#8B2CAD] transition-all disabled:opacity-50 whitespace-nowrap"
           >
             {addingModule ? 'Adding...' : '+ Add Module'}
           </button>

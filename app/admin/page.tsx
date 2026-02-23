@@ -72,10 +72,10 @@ export default async function AdminDashboard() {
   )
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
           Admin Dashboard
         </h1>
         <p className="text-[#B3B3B3]">

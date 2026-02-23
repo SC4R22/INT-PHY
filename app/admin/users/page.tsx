@@ -120,7 +120,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl font-semibold text-sm shadow-2xl border transition-all ${
@@ -132,13 +132,13 @@ export default function UsersPage() {
         </div>
       )}
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">User Management</h1>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">User Management</h1>
         <p className="text-[#B3B3B3]">All users across all roles</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
         <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-[#6A0DAD]">
           <p className="text-[#B3B3B3] text-sm">Students</p>
           <p className="text-3xl font-bold text-[#EFEFEF]">{roleCounts.student}</p>

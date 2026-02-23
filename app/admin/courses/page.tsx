@@ -14,11 +14,11 @@ export default async function AdminCoursesPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8">
         <div>
-          <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
+          <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
             Course Management
           </h1>
           <p className="text-[#B3B3B3]">
@@ -27,7 +27,7 @@ export default async function AdminCoursesPage() {
         </div>
         <Link
           href="/admin/courses/new"
-          className="px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all shadow-lg hover:shadow-[#6A0DAD]/40 flex items-center gap-2"
+          className="w-full sm:w-auto px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all shadow-lg hover:shadow-[#6A0DAD]/40 flex items-center justify-center gap-2"
         >
           <span className="text-xl">+</span>
           <span>Create New Course</span>

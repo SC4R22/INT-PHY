@@ -53,18 +53,18 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-[#1a1a1a]">
-      <div className="bg-gradient-to-br from-[#6A0DAD] to-[#8B2CAD] rounded-b-[2rem] p-16 text-center">
-        <h1 className="text-7xl font-black text-[#E8E8E8] uppercase italic tracking-tighter drop-shadow-lg font-payback">
+      <div className="bg-gradient-to-br from-[#6A0DAD] to-[#8B2CAD] rounded-b-[2rem] p-8 md:p-16 text-center">
+        <h1 className="text-5xl md:text-7xl font-black text-[#E8E8E8] uppercase italic tracking-tighter drop-shadow-lg font-payback">
           WELCOME !
         </h1>
       </div>
 
-      <div className="max-w-3xl mx-auto mt-8 bg-[#2A2A2A] rounded-xl overflow-hidden shadow-2xl mb-8">
+      <div className="max-w-3xl mx-4 md:mx-auto mt-6 md:mt-8 bg-[#2A2A2A] rounded-xl overflow-hidden shadow-2xl mb-8">
         <div className="flex border-b-4 border-[#6A0DAD]">
           <button
             suppressHydrationWarning
             onClick={() => setActiveTab("signup")}
-            className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
+            className={`flex-1 py-4 md:py-6 text-xl md:text-2xl font-extrabold transition-all ${
               activeTab === "signup" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
             }`}
           >
@@ -73,7 +73,7 @@ export default function SignUpPage() {
           <button
             suppressHydrationWarning
             onClick={() => { setActiveTab("login"); router.push("/login"); }}
-            className={`flex-1 py-6 text-2xl font-extrabold transition-all ${
+            className={`flex-1 py-4 md:py-6 text-xl md:text-2xl font-extrabold transition-all ${
               activeTab === "login" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
             }`}
           >
@@ -81,7 +81,7 @@ export default function SignUpPage() {
           </button>
         </div>
 
-        <div className="p-12">
+        <div className="p-6 md:p-12">
           {error && (
             <div className="bg-red-500 text-white px-4 py-3 rounded-lg mb-6">{error}</div>
           )}

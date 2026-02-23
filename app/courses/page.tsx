@@ -94,10 +94,10 @@ export default async function CoursesPage({
       )}
 
       {/* Header bar */}
-      <div className="bg-gradient-to-r from-primary to-primary/70 py-16">
+      <div className="bg-gradient-to-r from-primary to-primary/70 py-10 md:py-16">
         <div className="container-custom text-center">
-          <h1 className="text-5xl lg:text-7xl font-payback font-bold text-white mb-4">All Courses</h1>
-          <p className="text-white/80 text-lg">Choose a course and start learning today</p>
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-payback font-bold text-white mb-4">All Courses</h1>
+          <p className="text-white/80 text-base md:text-lg">Choose a course and start learning today</p>
         </div>
       </div>
 

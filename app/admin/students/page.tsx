@@ -24,14 +24,14 @@ export default async function StudentsPage() {
   const active = total - banned
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">Students</h1>
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">Students</h1>
         <p className="text-[#B3B3B3]">All registered students on the platform</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
         <div className="bg-[#2A2A2A] rounded-lg p-4 border-l-4 border-[#6A0DAD]">
           <p className="text-[#B3B3B3] text-sm">Total Students</p>
           <p className="text-3xl font-bold text-[#EFEFEF]">{total}</p>

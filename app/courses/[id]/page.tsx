@@ -126,8 +126,8 @@ export default async function CourseDetailPage({
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-primary/30 via-[#1e2125] to-[#25292D] border-b-2 border-primary/20">
-        <div className="container-custom py-16">
-          <div className="grid lg:grid-cols-3 gap-12 items-start">
+        <div className="container-custom py-10 md:py-16">
+          <div className="grid lg:grid-cols-3 gap-8 md:gap-12 items-start">
 
             {/* Left — course info */}
             <div className="lg:col-span-2 space-y-6">
@@ -135,16 +135,16 @@ export default async function CourseDetailPage({
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 ${course.is_free ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'}`}>
                   {course.is_free ? 'FREE COURSE' : 'PAID COURSE'}
                 </span>
-                <h1 className="text-4xl lg:text-6xl font-payback font-bold text-[#EFEFEF] leading-tight mb-4">
+                <h1 className="text-3xl md:text-4xl lg:text-6xl font-payback font-bold text-[#EFEFEF] leading-tight mb-4">
                   {course.title}
                 </h1>
-                <p className="text-[#B3B3B3] text-lg leading-relaxed max-w-2xl">
+                <p className="text-[#B3B3B3] text-base md:text-lg leading-relaxed max-w-2xl">
                   {course.description}
                 </p>
               </div>
 
               {/* Quick stats */}
-              <div className="flex flex-wrap gap-6 pt-4">
+              <div className="flex flex-wrap gap-4 md:gap-6 pt-4">
                 <div className="flex items-center gap-2 text-[#B3B3B3]">
                   <span className="text-2xl">📚</span>
                   <div>
@@ -173,7 +173,7 @@ export default async function CourseDetailPage({
 
             {/* Right — enroll card */}
             <div className="lg:col-span-1">
-              <div className="bg-[#2A2A2A] rounded-2xl p-6 border-2 border-primary/30 shadow-xl shadow-primary/10 sticky top-24">
+              <div className="bg-[#2A2A2A] rounded-2xl p-5 md:p-6 border-2 border-primary/30 shadow-xl shadow-primary/10 lg:sticky lg:top-24">
                 {/* Price */}
                 <div className="text-center mb-6">
                   <p className={`text-4xl font-payback font-bold mb-1 ${course.is_free ? 'text-green-400' : 'text-[#EFEFEF]'}`}>
@@ -230,14 +230,14 @@ export default async function CourseDetailPage({
             {modules.map((mod: any, modIndex: number) => (
               <div key={mod.id} className="bg-[#2A2A2A] rounded-xl overflow-hidden border-2 border-[#3A3A3A]">
                 {/* Module header */}
-                <div className="flex items-center justify-between px-6 py-4 bg-[#3A3A3A]">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-[#3A3A3A] gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {modIndex + 1}
                     </span>
-                    <h3 className="text-[#EFEFEF] font-bold">{mod.title}</h3>
+                    <h3 className="text-[#EFEFEF] font-bold truncate">{mod.title}</h3>
                   </div>
-                  <span className="text-[#B3B3B3] text-sm">
+                  <span className="text-[#B3B3B3] text-sm flex-shrink-0">
                     {mod.videos?.length || 0} video{mod.videos?.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -248,16 +248,16 @@ export default async function CourseDetailPage({
                     {[...mod.videos]
                       .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
                       .map((video: any, vidIndex: number) => (
-                        <div key={video.id} className="flex items-center justify-between px-6 py-3">
-                          <div className="flex items-center gap-3">
-                            <span className="text-primary text-sm w-5">{vidIndex + 1}.</span>
-                            <span className="text-2xl">🎬</span>
-                            <span className={`text-sm ${isEnrolled ? 'text-[#EFEFEF]' : 'text-[#B3B3B3]'}`}>
+                        <div key={video.id} className="flex items-center justify-between px-4 md:px-6 py-3 gap-2">
+                          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                            <span className="text-primary text-sm w-5 flex-shrink-0">{vidIndex + 1}.</span>
+                            <span className="text-lg md:text-2xl flex-shrink-0">🎬</span>
+                            <span className={`text-sm truncate ${isEnrolled ? 'text-[#EFEFEF]' : 'text-[#B3B3B3]'}`}>
                               {video.title}
                             </span>
                           </div>
                           {video.duration && (
-                            <span className="text-[#B3B3B3] text-xs">
+                            <span className="text-[#B3B3B3] text-xs flex-shrink-0">
                               {Math.floor(video.duration / 60)}m {video.duration % 60}s
                             </span>
                           )}

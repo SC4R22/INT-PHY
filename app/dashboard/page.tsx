@@ -179,8 +179,8 @@ export default async function DashboardPage() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto p-8">
-          <div className="bg-[#2A2A2A] rounded-xl p-8 mb-8">
+        <main className="max-w-7xl mx-auto p-4 md:p-8">
+          <div className="bg-[#2A2A2A] rounded-xl p-5 md:p-8 mb-8">
             <h2 className="text-3xl font-bold text-[#B3B3B3] mb-2">
               Welcome back, {profile.full_name}!
             </h2>

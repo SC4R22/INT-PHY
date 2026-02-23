@@ -86,12 +86,12 @@ export default async function WatchPage({
     <div className="min-h-screen bg-[#25292D] flex flex-col">
       {/* Header */}
       <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A] flex-shrink-0">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-4 flex items-center gap-3">
           <Link
             href={`/dashboard/courses/${courseId}`}
-            className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold"
+            className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold whitespace-nowrap"
           >
-            ← {course?.title ?? 'Course'}
+            ← <span className="hidden sm:inline">{course?.title ?? 'Course'}</span><span className="sm:hidden">Back</span>
           </Link>
           <span className="text-[#3A3A3A]">/</span>
           <span className="text-[#EFEFEF] font-bold text-sm truncate">{video.title}</span>

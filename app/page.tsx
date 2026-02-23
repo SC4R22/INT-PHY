@@ -31,10 +31,10 @@ export default async function HomePage() {
               </div>
 
               <div>
-                <h1 className="text-6xl lg:text-8xl font-payback font-bold text-[#EFEFEF] leading-none mb-2">
+                <h1 className="text-5xl md:text-6xl lg:text-8xl font-payback font-bold text-[#EFEFEF] leading-none mb-2">
                   MR.ESLAM
                 </h1>
-                <h1 className="text-6xl lg:text-8xl font-payback font-bold text-gradient leading-none">
+                <h1 className="text-5xl md:text-6xl lg:text-8xl font-payback font-bold text-gradient leading-none">
                   RABEA
                 </h1>
               </div>

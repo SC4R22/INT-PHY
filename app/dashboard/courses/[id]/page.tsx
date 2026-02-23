@@ -220,10 +220,10 @@ export default async function DashboardCoursePage({
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-10">
         {/* Course title + progress */}
-        <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-payback font-bold text-[#EFEFEF] uppercase italic mb-4">
+        <div className="mb-8 md:mb-10">
+          <h1 className="text-3xl md:text-5xl font-payback font-bold text-[#EFEFEF] uppercase italic mb-4">
             {course.title}
           </h1>
           <div className="flex items-center gap-4">
@@ -261,14 +261,14 @@ export default async function DashboardCoursePage({
                   className="bg-[#2A2A2A] rounded-xl overflow-hidden border-2 border-[#3A3A3A]"
                 >
                   {/* Module header */}
-                  <div className="flex items-center justify-between px-6 py-4 bg-[#3A3A3A]">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-[#3A3A3A] gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
                       <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {modIndex + 1}
                       </span>
-                      <h2 className="text-[#EFEFEF] font-bold">{mod.title}</h2>
+                      <h2 className="text-[#EFEFEF] font-bold truncate">{mod.title}</h2>
                     </div>
-                    <span className="text-[#B3B3B3] text-sm">
+                    <span className="text-[#B3B3B3] text-sm flex-shrink-0 whitespace-nowrap">
                       {modCompleted}/{sortedVideos.length} done
                     </span>
                   </div>
@@ -322,9 +322,9 @@ export default async function DashboardCoursePage({
                           <Link
                             key={video.id}
                             href={`/dashboard/watch/${video.id}`}
-                            className="flex items-center justify-between px-6 py-4 hover:bg-[#3A3A3A] transition-colors group"
+                            className="flex items-center justify-between px-4 md:px-6 py-4 hover:bg-[#3A3A3A] transition-colors group gap-2"
                           >
-                            <div className="flex items-center gap-4 min-w-0">
+                            <div className="flex items-center gap-3 md:gap-4 min-w-0">
                               {/* Completion indicator */}
                               <div
                                 className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-colors ${
