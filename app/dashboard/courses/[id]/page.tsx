@@ -51,7 +51,7 @@ export default async function DashboardCoursePage({
   let quizzesMap: Record<string, any[]> = {}
   if (moduleIds.length > 0) {
     const { data: quizzesData } = await supabase
-      .from('quizzes').select('id, title, order_index').in('module_id', moduleIds).order('order_index')
+      .from('quizzes').select('id, title, order_index, module_id').in('module_id', moduleIds).order('order_index')
     for (const q of quizzesData ?? []) {
       if (!quizzesMap[q.module_id]) quizzesMap[q.module_id] = []
       quizzesMap[q.module_id].push(q)
