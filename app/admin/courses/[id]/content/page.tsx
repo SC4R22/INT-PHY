@@ -581,7 +581,7 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
               )}
 
               {mod.exam.exam_question_items.length === 0 && activeExamModuleId !== mod.id && (
-                <p className="px-4 md:px-6 py-4 text-[#B3B3B3] text-sm italic">No questions yet — click "Add Question" to upload images</p>
+                <p className="px-4 md:px-6 py-4 text-[#B3B3B3] text-sm italic">No questions yet &mdash; click &quot;Add Question&quot; to upload images</p>
               )}
 
               {/* Add Exam Question Form */}
