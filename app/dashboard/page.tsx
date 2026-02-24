@@ -43,9 +43,9 @@ export default async function DashboardPage() {
             Your account is logged in but no profile was found. Please sign out and contact support if the issue persists.
           </p>
           <div className="flex gap-3">
-            <Link href="/api/auth/signout" className="btn btn-primary">
-              Sign Out
-            </Link>
+            <form action="/api/auth/signout" method="post">
+              <button type="submit" className="btn btn-primary">Sign Out</button>
+            </form>
             <Link href="/login" className="btn btn-secondary">
               Back to Login
             </Link>
