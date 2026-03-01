@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardCoursePage({
   params,
   searchParams,
@@ -93,6 +95,26 @@ export default async function DashboardCoursePage({
   const totalVideos = allVideoIds.length
   const completedCount = (progressRows ?? []).filter((p) => p.completed).length
   const progressPercent = totalVideos > 0 ? Math.round((completedCount / totalVideos) * 100) : 0
+
+  // ── Quiz gate: for each module, compute the locked video ids ──────────────
+  // A video is locked if it has a higher order_index than an unsubmitted quiz in the same module
+  const lockedVideoIds = new Set<string>()
+  for (const mod of (modules ?? []) as any[]) {
+    const modQuizzes: any[] = quizzesMap[mod.id] ?? []
+    if (modQuizzes.length === 0) continue
+    // Find the first unsubmitted quiz (lowest order_index without a submission)
+    const firstBlockingQuiz = modQuizzes
+      .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+      .find((q: any) => !quizSubmissionsMap[q.id])
+    if (!firstBlockingQuiz) continue
+    const gateIndex = firstBlockingQuiz.order_index ?? 0
+    // Lock all videos with order_index >= the blocking quiz's order_index
+    for (const v of (mod.videos ?? []) as any[]) {
+      if ((v.order_index ?? 0) >= gateIndex) {
+        lockedVideoIds.add(v.id)
+      }
+    }
+  }
 
   // ── EXPIRED VIEW ─────────────────────────────────────────────────────────────
   if (isExpiredView || course.deleted_at) {
@@ -280,6 +302,36 @@ export default async function DashboardCoursePage({
                           const lastPos = progress?.last_position ?? 0
                           const watchPercent = video.duration && video.duration > 0
                             ? Math.round((lastPos / video.duration) * 100) : 0
+                          const isLocked = lockedVideoIds.has(video.id)
+
+                          // Find which quiz is blocking this video
+                          const blockingQuiz = isLocked
+                            ? (quizzesMap[mod.id] ?? [])
+                                .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                                .find((q: any) => !quizSubmissionsMap[q.id] && (q.order_index ?? 0) <= (video.order_index ?? 0))
+                            : null
+
+                          if (isLocked) {
+                            return (
+                              <div key={video.id} className="flex items-center justify-between px-4 md:px-6 py-4 gap-2 opacity-60">
+                                <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-[#555] text-[#555] bg-[#1a1a1a]">
+                                    🔒
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[#777] text-sm font-semibold truncate">{vidIndex + 1}. {video.title}</p>
+                                    {blockingQuiz && (
+                                      <p className="text-yellow-600/80 text-xs mt-0.5">Complete &ldquo;{blockingQuiz.title}&rdquo; to unlock</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                                  {video.duration && <span className="text-[#555] text-xs">{Math.floor(video.duration/60)}m {video.duration%60}s</span>}
+                                </div>
+                              </div>
+                            )
+                          }
+
                           return (
                             <Link key={video.id} href={`/dashboard/watch/${video.id}`}
                               className="flex items-center justify-between px-4 md:px-6 py-4 hover:bg-[#3A3A3A] transition-colors group gap-2">

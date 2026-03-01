@@ -17,8 +17,14 @@ export async function GET(req: NextRequest) {
   if (getQuestions) {
     // Return quiz info + questions (without correct answers)
     const { data: quiz, error: qErr } = await admin
-      .from('quizzes').select('id, title, module_id').eq('id', quizId).single()
+      .from('quizzes')
+      .select('id, title, module_id, modules(course_id)')
+      .eq('id', quizId)
+      .single()
     if (qErr || !quiz) return NextResponse.json({ error: 'Quiz not found' }, { status: 404 })
+    // Flatten course_id onto quiz object
+    ;(quiz as any).course_id = (quiz as any).modules?.course_id ?? null
+    delete (quiz as any).modules
 
     const { data: questions } = await admin
       .from('quiz_questions')

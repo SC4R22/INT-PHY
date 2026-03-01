@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,7 +14,7 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#3A3A3A] bg-[#1e2125]/95 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b nav-bg backdrop-blur border-[var(--border-color)]">
       <nav className="container-custom flex items-center justify-between h-16 lg:h-20">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
@@ -28,7 +29,7 @@ export function Header() {
             <Link
               key={item.name}
               href={item.href}
-              className="text-sm lg:text-base font-medium text-[#B3B3B3] hover:text-primary transition-colors"
+              className="text-sm lg:text-base font-medium text-theme-secondary hover:text-primary transition-colors"
             >
               {item.name}
             </Link>
@@ -36,10 +37,11 @@ export function Header() {
         </div>
 
         {/* Right side actions */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-3">
+          <ThemeToggle />
           <Link
             href="/login"
-            className="text-sm lg:text-base font-medium text-[#B3B3B3] hover:text-primary transition-colors"
+            className="text-sm lg:text-base font-medium text-theme-secondary hover:text-primary transition-colors"
           >
             Log in
           </Link>
@@ -49,10 +51,11 @@ export function Header() {
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex md:hidden items-center">
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
           <button
             type="button"
-            className="inline-flex items-center justify-center p-2 rounded-lg text-[#B3B3B3] hover:text-primary"
+            className="inline-flex items-center justify-center p-2 rounded-lg text-theme-secondary hover:text-primary"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <span className="sr-only">Open main menu</span>
@@ -67,13 +70,13 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-[#3A3A3A] bg-[#1e2125]">
+        <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-nav)]">
           <div className="space-y-1 px-4 pb-3 pt-2">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="block px-3 py-2 text-base font-medium text-[#B3B3B3] hover:text-primary hover:bg-[#2A2A2A] rounded-lg"
+                className="block px-3 py-2 text-base font-medium text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.name}
@@ -82,7 +85,7 @@ export function Header() {
             <div className="pt-4 space-y-2">
               <Link
                 href="/login"
-                className="block w-full text-center px-3 py-2 text-base font-medium text-[#B3B3B3] hover:text-primary hover:bg-[#2A2A2A] rounded-lg"
+                className="block w-full text-center px-3 py-2 text-base font-medium text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Log in

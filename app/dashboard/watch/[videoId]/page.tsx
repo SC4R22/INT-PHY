@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { VideoPlayer } from './video-player'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function WatchPage({
   params,
@@ -55,6 +56,32 @@ export default async function WatchPage({
     redirect(`/dashboard/courses/${courseId}?expired=1`)
   }
 
+  // ── Quiz gate: check if this video is locked ────────────────────────────
+  // Fetch quizzes in this module and check for unsubmitted ones before this video
+  const { data: moduleQuizzes } = await supabase
+    .from('quizzes')
+    .select('id, order_index, title')
+    .eq('module_id', mod?.id)
+    .order('order_index')
+
+  if (moduleQuizzes && moduleQuizzes.length > 0) {
+    // Get the user's quiz submissions for this module's quizzes
+    const quizIds = moduleQuizzes.map((q: any) => q.id)
+    const { data: submissions } = await supabase
+      .from('quiz_submissions')
+      .select('quiz_id')
+      .eq('user_id', user.id)
+      .in('quiz_id', quizIds)
+    const submittedIds = new Set((submissions ?? []).map((s: any) => s.quiz_id))
+
+    // Find the first unsubmitted quiz
+    const blockingQuiz = moduleQuizzes.find((q: any) => !submittedIds.has(q.id))
+    if (blockingQuiz && (video.order_index ?? 0) >= (blockingQuiz.order_index ?? 0)) {
+      // This video is locked — redirect to the quiz
+      redirect(`/dashboard/quiz/${blockingQuiz.id}?locked=1`)
+    }
+  }
+
   // Get all videos in this course for the sidebar
   const { data: modules } = await supabase
     .from('modules')
@@ -79,22 +106,62 @@ export default async function WatchPage({
     (progressRows ?? []).map((p) => [p.video_id, p])
   )
 
+  // ── Compute locked video ids for the sidebar ───────────────────────
+  const sidebarModuleIds = (modules ?? []).map((m: any) => m.id)
+  const sidebarLockedVideoIds = new Set<string>()
+  if (sidebarModuleIds.length > 0) {
+    const { data: allModuleQuizzes } = await supabase
+      .from('quizzes')
+      .select('id, order_index, module_id')
+      .in('module_id', sidebarModuleIds)
+      .order('order_index')
+
+    if (allModuleQuizzes && allModuleQuizzes.length > 0) {
+      const allQuizIds = allModuleQuizzes.map((q: any) => q.id)
+      const { data: allSubs } = await supabase
+        .from('quiz_submissions')
+        .select('quiz_id')
+        .eq('user_id', user.id)
+        .in('quiz_id', allQuizIds)
+      const submittedSet = new Set((allSubs ?? []).map((s: any) => s.quiz_id))
+
+      // Group quizzes by module
+      const quizzesByModule: Record<string, any[]> = {}
+      for (const q of allModuleQuizzes) {
+        if (!quizzesByModule[q.module_id]) quizzesByModule[q.module_id] = []
+        quizzesByModule[q.module_id].push(q)
+      }
+
+      for (const m of (modules ?? []) as any[]) {
+        const mQuizzes = quizzesByModule[m.id] ?? []
+        const blocking = mQuizzes.find((q: any) => !submittedSet.has(q.id))
+        if (!blocking) continue
+        for (const v of (m.videos ?? []) as any[]) {
+          if ((v.order_index ?? 0) >= (blocking.order_index ?? 0)) {
+            sidebarLockedVideoIds.add(v.id)
+          }
+        }
+      }
+    }
+  }
+
   // Get current video progress
   const currentProgress = progressMap.get(videoId)
 
   return (
-    <div className="min-h-screen bg-[#25292D] flex flex-col">
+    <div className="min-h-screen bg-theme-primary flex flex-col">
       {/* Header */}
-      <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A] flex-shrink-0">
+      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)] flex-shrink-0">
         <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-4 flex items-center gap-3">
           <Link
             href={`/dashboard/courses/${courseId}`}
-            className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold whitespace-nowrap"
+            className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold whitespace-nowrap"
           >
             ← <span className="hidden sm:inline">{course?.title ?? 'Course'}</span><span className="sm:hidden">Back</span>
           </Link>
-          <span className="text-[#3A3A3A]">/</span>
-          <span className="text-[#EFEFEF] font-bold text-sm truncate">{video.title}</span>
+          <span className="text-theme-muted">/</span>
+          <span className="text-theme-primary font-bold text-sm truncate flex-1">{video.title}</span>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -116,14 +183,14 @@ export default async function WatchPage({
         </div>
 
         {/* Sidebar: course curriculum */}
-        <aside className="w-80 bg-[#1e2125] border-l-2 border-[#3A3A3A] overflow-y-auto hidden lg:block flex-shrink-0">
-          <div className="p-4 border-b border-[#3A3A3A]">
-            <h2 className="text-[#EFEFEF] font-bold text-sm uppercase tracking-wider">
+        <aside className="w-80 bg-[var(--bg-nav)] border-l-2 border-[var(--border-color)] overflow-y-auto hidden lg:block flex-shrink-0">
+          <div className="p-4 border-b border-[var(--border-color)]">
+            <h2 className="text-theme-primary font-bold text-sm uppercase tracking-wider">
               Course Content
             </h2>
           </div>
 
-          <div className="divide-y divide-[#3A3A3A]">
+          <div className="divide-y divide-[var(--border-color)]">
             {(modules ?? []).map((mod: any, modIndex: number) => {
               const sortedVideos = [...(mod.videos ?? [])].sort(
                 (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)
@@ -132,8 +199,8 @@ export default async function WatchPage({
               return (
                 <div key={mod.id}>
                   {/* Module label */}
-                  <div className="px-4 py-3 bg-[#25292D]">
-                    <p className="text-[#B3B3B3] text-xs font-bold uppercase tracking-wider">
+                  <div className="px-4 py-3 bg-theme-primary">
+                    <p className="text-theme-secondary text-xs font-bold uppercase tracking-wider">
                       {modIndex + 1}. {mod.title}
                     </p>
                   </div>
@@ -143,6 +210,30 @@ export default async function WatchPage({
                     const prog = progressMap.get(v.id)
                     const isActive = v.id === videoId
                     const isDone = prog?.completed ?? false
+                    const isLocked = sidebarLockedVideoIds.has(v.id)
+
+                    if (isLocked) {
+                      return (
+                        <div
+                          key={v.id}
+                          className="flex items-center gap-3 px-4 py-3 border-l-4 border-transparent opacity-50 cursor-not-allowed"
+                        >
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border border-[var(--text-muted)] text-[var(--text-muted)] text-[10px]">
+                            🔒
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold truncate text-theme-muted">
+                              {vIdx + 1}. {v.title}
+                            </p>
+                            {v.duration && (
+                              <p className="text-[10px] text-theme-muted mt-0.5">
+                                {Math.floor(v.duration / 60)}m {v.duration % 60}s
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
 
                     return (
                       <Link
@@ -151,7 +242,7 @@ export default async function WatchPage({
                         className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                           isActive
                             ? 'bg-primary/20 border-l-4 border-primary'
-                            : 'hover:bg-[#2A2A2A] border-l-4 border-transparent'
+                            : 'hover:bg-[var(--bg-card-alt)] border-l-4 border-transparent'
                         }`}
                       >
                         <div
@@ -160,7 +251,7 @@ export default async function WatchPage({
                               ? 'bg-green-500 border-green-500 text-white'
                               : isActive
                               ? 'border-primary text-primary'
-                              : 'border-[#555] text-[#555]'
+                              : 'border-[var(--text-muted)] text-[var(--text-muted)]'
                           }`}
                         >
                           {isDone ? (
@@ -176,13 +267,13 @@ export default async function WatchPage({
                         <div className="min-w-0 flex-1">
                           <p
                             className={`text-xs font-semibold truncate ${
-                              isActive ? 'text-primary' : isDone ? 'text-[#B3B3B3]' : 'text-[#EFEFEF]'
+                              isActive ? 'text-primary' : isDone ? 'text-theme-secondary' : 'text-theme-primary'
                             }`}
                           >
                             {vIdx + 1}. {v.title}
                           </p>
                           {v.duration && (
-                            <p className="text-[10px] text-[#555] mt-0.5">
+                            <p className="text-[10px] text-theme-muted mt-0.5">
                               {Math.floor(v.duration / 60)}m {v.duration % 60}s
                             </p>
                           )}

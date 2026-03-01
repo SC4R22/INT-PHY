@@ -6,7 +6,7 @@ const YOUTUBE_URL = 'https://www.youtube.com/@mr.eslamrabea9564'
 
 export function Footer() {
   return (
-    <footer className="border-t-2 border-[#3A3A3A] bg-[#1e2125]">
+    <footer className="border-t-2 border-[var(--border-color)] bg-[var(--bg-secondary)]">
       <div className="container-custom py-12 lg:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-3">
 
@@ -17,14 +17,13 @@ export function Footer() {
                 INT-PHYSICS
               </span>
             </Link>
-            {/* Social icons */}
             <div className="flex items-center gap-3">
               {/* WhatsApp */}
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-[#2A2A2A] border border-[#3A3A3A] hover:border-green-500 hover:bg-green-500/10 flex items-center justify-center text-[#B3B3B3] hover:text-green-400 transition-all"
+                className="w-10 h-10 rounded-xl bg-theme-card border border-[var(--border-color)] hover:border-green-500 hover:bg-green-500/10 flex items-center justify-center text-theme-secondary hover:text-green-400 transition-all"
                 aria-label="WhatsApp"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
@@ -36,7 +35,7 @@ export function Footer() {
                 href={YOUTUBE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-[#2A2A2A] border border-[#3A3A3A] hover:border-red-500 hover:bg-red-500/10 flex items-center justify-center text-[#B3B3B3] hover:text-red-400 transition-all"
+                className="w-10 h-10 rounded-xl bg-theme-card border border-[var(--border-color)] hover:border-red-500 hover:bg-red-500/10 flex items-center justify-center text-theme-secondary hover:text-red-400 transition-all"
                 aria-label="YouTube"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
@@ -48,15 +47,11 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="text-xs font-bold text-[#B3B3B3] uppercase tracking-widest mb-5">Company</h3>
+            <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest mb-5">Company</h3>
             <ul className="space-y-3">
               <li>
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#B3B3B3] hover:text-primary transition-colors"
-                >
+                <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-theme-secondary hover:text-primary transition-colors">
                   Contact Us
                 </a>
               </li>
@@ -65,20 +60,16 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="text-xs font-bold text-[#B3B3B3] uppercase tracking-widest mb-5">Resources</h3>
+            <h3 className="text-xs font-bold text-theme-secondary uppercase tracking-widest mb-5">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/courses" className="text-sm text-[#B3B3B3] hover:text-primary transition-colors">
+                <Link href="/courses" className="text-sm text-theme-secondary hover:text-primary transition-colors">
                   Courses
                 </Link>
               </li>
               <li>
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#B3B3B3] hover:text-primary transition-colors"
-                >
+                <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-theme-secondary hover:text-primary transition-colors">
                   Contact Admin
                 </a>
               </li>
@@ -88,11 +79,11 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t border-[#3A3A3A] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#555]">
+        <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-theme-muted">
             &copy; {new Date().getFullYear()} TB DEVS. All rights reserved.
           </p>
-          <p className="text-xs text-[#555]">
+          <p className="text-xs text-theme-muted">
             Built for INT-PHYSICS
           </p>
         </div>

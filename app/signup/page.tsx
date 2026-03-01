@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signup } from "@/app/actions/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -27,10 +28,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
-      // Use the server action — has proper validation, sanitization, and
-      // hardcodes role: "student" server-side so it cannot be tampered with
       const result = await signup(
         formData.fullName,
         formData.phoneNumber,
@@ -38,13 +36,7 @@ export default function SignUpPage() {
         formData.parentName || undefined,
         formData.parentPhoneNumber || undefined,
       );
-
-      if (result?.error) {
-        setError(result.error);
-        setLoading(false);
-        return;
-      }
-      // Server action handles redirect — nothing to do here
+      if (result?.error) { setError(result.error); setLoading(false); return; }
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setLoading(false);
@@ -52,20 +44,25 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
+    <div className="min-h-screen bg-theme-primary">
+      {/* Theme toggle top-right */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
       <div className="bg-gradient-to-br from-[#6A0DAD] to-[#8B2CAD] rounded-b-[2rem] p-8 md:p-16 text-center">
-        <h1 className="text-5xl md:text-7xl font-black text-[#E8E8E8] uppercase italic tracking-tighter drop-shadow-lg font-payback">
+        <h1 className="text-5xl md:text-7xl font-black text-white uppercase italic tracking-tighter drop-shadow-lg font-payback">
           WELCOME !
         </h1>
       </div>
 
-      <div className="max-w-3xl mx-4 md:mx-auto mt-6 md:mt-8 bg-[#2A2A2A] rounded-xl overflow-hidden shadow-2xl mb-8">
+      <div className="max-w-3xl mx-4 md:mx-auto mt-6 md:mt-8 bg-theme-card rounded-xl overflow-hidden shadow-2xl mb-8">
         <div className="flex border-b-4 border-[#6A0DAD]">
           <button
             suppressHydrationWarning
             onClick={() => setActiveTab("signup")}
             className={`flex-1 py-4 md:py-6 text-xl md:text-2xl font-extrabold transition-all ${
-              activeTab === "signup" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
+              activeTab === "signup" ? "text-primary bg-theme-card" : "text-theme-secondary bg-theme-primary"
             }`}
           >
             Sign-up
@@ -74,7 +71,7 @@ export default function SignUpPage() {
             suppressHydrationWarning
             onClick={() => { setActiveTab("login"); router.push("/login"); }}
             className={`flex-1 py-4 md:py-6 text-xl md:text-2xl font-extrabold transition-all ${
-              activeTab === "login" ? "text-[#6A0DAD] bg-[#2A2A2A]" : "text-[#EFEFEF] bg-[#1a1a1a]"
+              activeTab === "login" ? "text-primary bg-theme-card" : "text-theme-secondary bg-theme-primary"
             }`}
           >
             Log-in
@@ -87,45 +84,51 @@ export default function SignUpPage() {
           )}
 
           <form onSubmit={handleSignUp} className="space-y-6">
+            {[
+              { label: "Name", name: "fullName", type: "text", placeholder: "Enter your name", required: true, maxLength: 100 },
+              { label: "Parent Name", name: "parentName", type: "text", placeholder: "Enter parent's name (optional)", required: false, maxLength: 100 },
+              { label: "Phone Number", name: "phoneNumber", type: "tel", placeholder: "Enter your phone number", required: true, maxLength: 20 },
+              { label: "Parent Phone Number", name: "parentPhoneNumber", type: "tel", placeholder: "Enter parent's phone number (optional)", required: false, maxLength: 20 },
+            ].map((field) => (
+              <div key={field.name}>
+                <label className="block text-theme-secondary text-sm font-semibold mb-2">{field.label}</label>
+                <input
+                  type={field.type}
+                  name={field.name}
+                  value={(formData as any)[field.name]}
+                  onChange={handleInputChange}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  maxLength={field.maxLength}
+                  className="w-full px-4 py-4 bg-[var(--bg-input)] border-4 border-[#6A0DAD] rounded-lg text-theme-primary focus:outline-none focus:border-primary-400 transition-all placeholder:text-theme-muted"
+                />
+              </div>
+            ))}
+
             <div>
-              <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Name</label>
-              <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange}
-                placeholder="Enter your name" required maxLength={100}
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Parent Name</label>
-              <input type="text" name="parentName" value={formData.parentName} onChange={handleInputChange}
-                placeholder="Enter parent's name (optional)" maxLength={100}
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Phone Number</label>
-              <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange}
-                placeholder="Enter your phone number" required maxLength={20}
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Parent Phone Number</label>
-              <input type="tel" name="parentPhoneNumber" value={formData.parentPhoneNumber} onChange={handleInputChange}
-                placeholder="Enter parent's phone number (optional)" maxLength={20}
-                className="w-full px-4 py-4 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
-            </div>
-            <div>
-              <label className="block text-[#B3B3B3] text-sm font-semibold mb-2">Password</label>
+              <label className="block text-theme-secondary text-sm font-semibold mb-2">Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleInputChange}
-                  placeholder="Create a password (min 8 characters)" required minLength={8} maxLength={72}
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Create a password (min 8 characters)"
+                  required
+                  minLength={8}
+                  maxLength={72}
                   suppressHydrationWarning
-                  className="w-full px-4 py-4 pr-14 bg-[#3A3A3A] border-4 border-[#6A0DAD] rounded-lg text-[#EFEFEF] focus:outline-none focus:border-[#8B2CAD] transition-all placeholder:text-gray-500" />
+                  className="w-full px-4 py-4 pr-14 bg-[var(--bg-input)] border-4 border-[#6A0DAD] rounded-lg text-theme-primary focus:outline-none focus:border-primary-400 transition-all placeholder:text-theme-muted"
+                />
                 <button type="button" suppressHydrationWarning onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors select-none">
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-theme-primary transition-colors select-none">
                   <i className={`fi ${showPassword ? 'fi-rr-eye-crossed' : 'fi-rr-eye'} text-xl`} />
                 </button>
               </div>
             </div>
+
             <button type="submit" disabled={loading} suppressHydrationWarning
-              className="w-full py-5 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg text-xl font-bold hover:bg-[#8B2CAD] transform hover:-translate-y-1 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
+              className="w-full py-5 bg-primary text-white rounded-lg text-xl font-bold hover:bg-primary-600 transform hover:-translate-y-1 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
               {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>

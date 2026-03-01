@@ -18,16 +18,16 @@ export default async function AdminCoursesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
+          <h1 className="text-3xl md:text-4xl font-black text-theme-primary uppercase italic font-payback mb-2">
             Course Management
           </h1>
-          <p className="text-[#B3B3B3]">
+          <p className="text-theme-secondary">
             Create, edit, and manage all courses
           </p>
         </div>
         <Link
           href="/admin/courses/new"
-          className="w-full sm:w-auto px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all shadow-lg hover:shadow-[#6A0DAD]/40 flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary/80 transition-all shadow-lg flex items-center justify-center gap-2"
         >
           <span className="text-xl">+</span>
           <span>Create New Course</span>
@@ -36,51 +36,51 @@ export default async function AdminCoursesPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-[#2A2A2A] rounded-lg p-4 border-2 border-[#6A0DAD]">
-          <p className="text-[#B3B3B3] text-sm">Total Courses</p>
-          <p className="text-3xl font-bold text-[#EFEFEF]">{courses?.length || 0}</p>
+        <div className="bg-theme-card rounded-lg p-4 border-2 border-primary">
+          <p className="text-theme-secondary text-sm">Total Courses</p>
+          <p className="text-3xl font-bold text-theme-primary">{courses?.length || 0}</p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4">
-          <p className="text-[#B3B3B3] text-sm">Published</p>
-          <p className="text-3xl font-bold text-green-400">
+        <div className="bg-theme-card rounded-lg p-4 border border-[var(--border-color)]">
+          <p className="text-theme-secondary text-sm">Published</p>
+          <p className="text-3xl font-bold text-green-500">
             {courses?.filter(c => c.published).length || 0}
           </p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4">
-          <p className="text-[#B3B3B3] text-sm">Drafts</p>
-          <p className="text-3xl font-bold text-yellow-400">
+        <div className="bg-theme-card rounded-lg p-4 border border-[var(--border-color)]">
+          <p className="text-theme-secondary text-sm">Drafts</p>
+          <p className="text-3xl font-bold text-yellow-500">
             {courses?.filter(c => !c.published).length || 0}
           </p>
         </div>
-        <div className="bg-[#2A2A2A] rounded-lg p-4">
-          <p className="text-[#B3B3B3] text-sm">Free Courses</p>
-          <p className="text-3xl font-bold text-blue-400">
+        <div className="bg-theme-card rounded-lg p-4 border border-[var(--border-color)]">
+          <p className="text-theme-secondary text-sm">Free Courses</p>
+          <p className="text-3xl font-bold text-blue-500">
             {courses?.filter(c => c.is_free).length || 0}
           </p>
         </div>
       </div>
 
       {/* Courses List */}
-      <div className="bg-[#2A2A2A] rounded-xl shadow-xl overflow-hidden">
+      <div className="bg-theme-card rounded-xl shadow-xl overflow-hidden border border-[var(--border-color)]">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#6A0DAD]">
+            <thead className="bg-primary">
               <tr>
-                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">Course Title</th>
-                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">Status</th>
-                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">Price</th>
-                <th className="px-6 py-4 text-left text-[#EFEFEF] font-bold">Created</th>
-                <th className="px-6 py-4 text-right text-[#EFEFEF] font-bold">Actions</th>
+                <th className="px-6 py-4 text-left text-white font-bold">Course Title</th>
+                <th className="px-6 py-4 text-left text-white font-bold">Status</th>
+                <th className="px-6 py-4 text-left text-white font-bold">Price</th>
+                <th className="px-6 py-4 text-left text-white font-bold">Created</th>
+                <th className="px-6 py-4 text-right text-white font-bold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-[#3A3A3A]">
+            <tbody className="divide-y divide-[var(--border-color)]">
               {courses && courses.length > 0 ? (
                 courses.map((course: any) => (
-                  <tr key={course.id} className="hover:bg-[#3A3A3A] transition-colors">
+                  <tr key={course.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <p className="text-[#EFEFEF] font-semibold">{course.title}</p>
-                        <p className="text-[#B3B3B3] text-sm line-clamp-1">{course.description}</p>
+                        <p className="text-theme-primary font-semibold">{course.title}</p>
+                        <p className="text-theme-secondary text-sm line-clamp-1">{course.description}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -95,10 +95,10 @@ export default async function AdminCoursesPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-[#EFEFEF]">
+                    <td className="px-6 py-4 text-theme-primary">
                       {course.is_free ? 'Free' : `${course.price_cash} EGP`}
                     </td>
-                    <td className="px-6 py-4 text-[#B3B3B3] text-sm">
+                    <td className="px-6 py-4 text-theme-secondary text-sm">
                       {new Date(course.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
@@ -111,7 +111,7 @@ export default async function AdminCoursesPage() {
                         </Link>
                         <Link
                           href={`/admin/courses/${course.id}/content`}
-                          className="px-3 py-1 bg-[#6A0DAD] text-white text-sm font-semibold rounded hover:bg-[#8B2CAD] transition-colors"
+                          className="px-3 py-1 bg-primary text-white text-sm font-semibold rounded hover:bg-primary/80 transition-colors"
                         >
                           Content
                         </Link>
@@ -122,10 +122,10 @@ export default async function AdminCoursesPage() {
               ) : (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
-                    <p className="text-[#B3B3B3] text-lg mb-4">No courses created yet</p>
+                    <p className="text-theme-secondary text-lg mb-4">No courses created yet</p>
                     <Link
                       href="/admin/courses/new"
-                      className="inline-block px-6 py-3 bg-[#6A0DAD] text-[#EFEFEF] rounded-lg font-bold hover:bg-[#8B2CAD] transition-all"
+                      className="inline-block px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary/80 transition-all"
                     >
                       Create Your First Course
                     </Link>

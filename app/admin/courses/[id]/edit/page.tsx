@@ -1,11 +1,13 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export default function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -14,6 +16,10 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const [form, setForm] = useState({
     title: '', description: '', price_cash: '', is_free: false, published: false,
   })
+  const [existingThumbUrl, setExistingThumbUrl] = useState<string | null>(null)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
+  const [removeThumb, setRemoveThumb] = useState(false)
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}/details`)
@@ -28,6 +34,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           is_free: d.is_free || false,
           published: d.published || false,
         })
+        setExistingThumbUrl(d.thumbnail_url || null)
         setLoading(false)
       })
       .catch(() => { setError('Failed to load course'); setLoading(false) })
@@ -41,11 +48,50 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     }))
   }
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setError('Thumbnail must be under 5MB'); return }
+    setThumbnailFile(file)
+    setThumbnailPreview(URL.createObjectURL(file))
+    setRemoveThumb(false)
+    setError(null)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    if (file.size > 5 * 1024 * 1024) { setError('Thumbnail must be under 5MB'); return }
+    setThumbnailFile(file)
+    setThumbnailPreview(URL.createObjectURL(file))
+    setRemoveThumb(false)
+    setError(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(false)
     setSaving(true)
+
+    let thumbnail_url: string | null | undefined = undefined // undefined = no change
+
+    // Upload new thumbnail if provided
+    if (thumbnailFile) {
+      const supabase = createClient()
+      const ext = thumbnailFile.name.split('.').pop()
+      const path = `${id}/thumbnail.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('course-thumbnails')
+        .upload(path, thumbnailFile, { upsert: true, contentType: thumbnailFile.type })
+      if (upErr) { setError('Failed to upload thumbnail: ' + upErr.message); setSaving(false); return }
+      const { data } = supabase.storage.from('course-thumbnails').getPublicUrl(path)
+      thumbnail_url = data.publicUrl
+    } else if (removeThumb) {
+      thumbnail_url = null // explicitly remove
+    }
+
     const res = await fetch(`/api/admin/courses/${id}/details`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,10 +101,18 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         price_cash: form.is_free ? 0 : parseFloat(form.price_cash) || 0,
         is_free: form.is_free,
         published: form.published,
+        ...(thumbnail_url !== undefined ? { thumbnail_url } : {}),
       }),
     })
     const json = await res.json()
     if (json.error) { setError(json.error); setSaving(false); return }
+
+    if (thumbnail_url !== undefined) {
+      setExistingThumbUrl(thumbnail_url)
+      setThumbnailFile(null)
+      setThumbnailPreview(null)
+      setRemoveThumb(false)
+    }
     setSuccess(true)
     setSaving(false)
     setTimeout(() => setSuccess(false), 3000)
@@ -77,6 +131,8 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     router.push('/admin/courses')
   }
 
+  const currentPreview = thumbnailPreview ?? (removeThumb ? null : existingThumbUrl)
+
   if (loading) return <div className="p-8 text-[#B3B3B3] animate-pulse">Loading...</div>
 
   return (
@@ -94,6 +150,63 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       {success && <div className="mb-6 p-4 bg-green-500/20 border-2 border-green-500 rounded-lg text-green-400 font-semibold">✓ Course updated successfully</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Thumbnail Upload */}
+        <div className="bg-[#2A2A2A] rounded-xl p-6">
+          <label className="block text-[#B3B3B3] text-sm font-bold mb-4 uppercase tracking-wider">Course Thumbnail</label>
+          <div
+            className={`relative rounded-xl border-2 border-dashed transition-colors cursor-pointer overflow-hidden ${
+              currentPreview ? 'border-[#6A0DAD]' : 'border-[#3A3A3A] hover:border-[#6A0DAD]'
+            }`}
+            style={{ aspectRatio: '16/9' }}
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+          >
+            {currentPreview ? (
+              <>
+                <img src={currentPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">Click to change</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setThumbnailFile(null)
+                    setThumbnailPreview(null)
+                    setRemoveThumb(true)
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors"
+                >
+                  ✕
+                </button>
+                {thumbnailFile && (
+                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-yellow-600/90 rounded text-white text-xs font-bold">
+                    New — unsaved
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#B3B3B3]">
+                <div className="w-14 h-14 rounded-full bg-[#3A3A3A] flex items-center justify-center text-2xl">🖼️</div>
+                <div className="text-center">
+                  <p className="font-semibold text-sm">Click or drag & drop to upload</p>
+                  <p className="text-xs text-[#555] mt-1">JPG, PNG, WebP · Max 5MB · 16:9 recommended</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            onChange={handleThumbnailChange}
+            className="hidden"
+          />
+        </div>
+
         <div className="bg-[#2A2A2A] rounded-xl p-6">
           <label className="block text-[#B3B3B3] text-sm font-bold mb-2 uppercase tracking-wider">Course Title *</label>
           <input type="text" name="title" value={form.title} onChange={handleChange} required

@@ -15,13 +15,15 @@ interface Question {
 }
 
 interface QuizData {
-  quiz: { id: string; title: string; module_id: string }
+  quiz: { id: string; title: string; module_id: string; course_id: string | null }
   questions: Question[]
   submission: { score: number; total: number; answers: Record<string, string> } | null
 }
 
-export default function QuizPage({ params }: { params: Promise<{ quizId: string }> }) {
+export default function QuizPage({ params, searchParams }: { params: Promise<{ quizId: string }>, searchParams: Promise<{ locked?: string }> }) {
   const { quizId } = use(params)
+  const { locked } = use(searchParams)
+  const isLockedRedirect = locked === '1'
   const router = useRouter()
 
   const [data, setData] = useState<QuizData | null>(null)
@@ -105,7 +107,13 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A] sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => router.back()} className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold flex-shrink-0">← Back</button>
+            <button
+              onClick={() => {
+                const courseId = data?.quiz.course_id
+                if (courseId) { router.push(`/dashboard/courses/${courseId}`); router.refresh() }
+                else { router.push('/dashboard'); router.refresh() }
+              }}
+              className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold flex-shrink-0">← Back</button>
             <span className="text-[#3A3A3A]">/</span>
             <span className="text-[#EFEFEF] font-bold text-sm truncate">{data?.quiz.title}</span>
             <span className="px-2 py-0.5 bg-yellow-600/30 text-yellow-400 text-xs font-bold rounded-full border border-yellow-600/40 flex-shrink-0">QUIZ</span>
@@ -117,6 +125,17 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
+
+        {/* Locked redirect banner */}
+        {isLockedRedirect && !isFinished && (
+          <div className="mb-6 p-4 bg-yellow-900/30 border-2 border-yellow-600/50 rounded-xl flex items-start gap-3">
+            <span className="text-2xl flex-shrink-0">🔒</span>
+            <div>
+              <p className="text-yellow-400 font-bold text-sm">Quiz required to continue</p>
+              <p className="text-yellow-300/70 text-xs mt-0.5">You must complete this quiz before accessing the next videos in this module.</p>
+            </div>
+          </div>
+        )}
 
         {/* Result banner */}
         {isFinished && displayResult && (
@@ -142,7 +161,17 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
                 className="px-6 py-2.5 bg-yellow-600 text-white font-bold rounded-xl hover:bg-yellow-500 transition-colors text-sm">
                 🔄 Retake Quiz
               </button>
-              <button onClick={() => router.back()}
+              <button
+                onClick={() => {
+                  const courseId = data?.quiz.course_id
+                  if (courseId) {
+                    router.push(`/dashboard/courses/${courseId}`)
+                    router.refresh()
+                  } else {
+                    router.push('/dashboard')
+                    router.refresh()
+                  }
+                }}
                 className="px-6 py-2.5 bg-[#3A3A3A] text-[#EFEFEF] font-bold rounded-xl hover:bg-[#4A4A4A] transition-colors text-sm">
                 ← Back to Course
               </button>

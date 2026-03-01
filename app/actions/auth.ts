@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function login(phoneNumber: string, password: string) {
   const supabase = await createClient()
@@ -20,8 +21,23 @@ export async function login(phoneNumber: string, password: string) {
     return { error: error.message }
   }
 
+  // Check role to redirect admins/teachers to admin panel
+  const { data: { user } } = await supabase.auth.getUser()
+  let redirectTo = '/dashboard'
+  if (user) {
+    const admin = createAdminClient()
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    if (profile?.role === 'admin' || profile?.role === 'teacher') {
+      redirectTo = '/admin'
+    }
+  }
+
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect(redirectTo)
 }
 
 export async function signup(

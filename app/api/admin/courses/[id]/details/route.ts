@@ -52,10 +52,12 @@ export async function POST(
   }
 
   // Update
-  const { title, description, price_cash, is_free, published } = body
+  const { title, description, price_cash, is_free, published, thumbnail_url } = body
+  const updateData: any = { title, description, price_cash, is_free, published }
+  if (thumbnail_url !== undefined) updateData.thumbnail_url = thumbnail_url
   const { error } = await admin
     .from('courses')
-    .update({ title, description, price_cash, is_free, published })
+    .update(updateData)
     .eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

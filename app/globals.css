@@ -6,15 +6,45 @@
   :root {
     --font-payback: 'Payback', sans-serif;
     --font-inter: 'Inter', sans-serif;
+
+    /* ── Light mode CSS variables ── */
+    --bg-primary:    #F5F5F7;
+    --bg-secondary:  #FFFFFF;
+    --bg-card:       #FFFFFF;
+    --bg-card-alt:   #F0F0F4;
+    --bg-nav:        #FFFFFF;
+    --bg-input:      #F5F5F7;
+    --border-color:  #D1D1D6;
+    --text-primary:  #1A1A2E;
+    --text-secondary:#4A4A6A;
+    --text-muted:    #6E6E8A;
+    --shadow:        0 1px 3px rgba(0,0,0,0.1);
   }
 
-  /* Always dark */
+  .dark {
+    /* ── Dark mode CSS variables ── */
+    --bg-primary:    #25292D;
+    --bg-secondary:  #1e2125;
+    --bg-card:       #2A2A2A;
+    --bg-card-alt:   #1a1a1a;
+    --bg-nav:        #1e2125;
+    --bg-input:      #2A2A2A;
+    --border-color:  #3A3A3A;
+    --text-primary:  #EFEFEF;
+    --text-secondary:#B3B3B3;
+    --text-muted:    #777777;
+    --shadow:        0 1px 3px rgba(0,0,0,0.4);
+  }
+
   body {
-    @apply bg-[#25292D] text-[#EFEFEF] font-inter;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    @apply font-inter transition-colors duration-200;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-payback text-[#EFEFEF];
+    color: var(--text-primary);
+    @apply font-payback;
   }
 
   a, button {
@@ -35,12 +65,41 @@
     @apply bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white;
   }
 
+  /* ── Theme-aware card ── */
   .card {
-    @apply rounded-xl shadow-lg overflow-hidden bg-[#2A2A2A];
+    @apply rounded-xl shadow-lg overflow-hidden;
+    background-color: var(--bg-card);
   }
 
+  /* ── Theme-aware input ── */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border-2 outline-none bg-[#2A2A2A] border-[#3A3A3A] focus:border-primary text-[#EFEFEF];
+    @apply w-full px-4 py-3 rounded-lg border-2 outline-none font-medium;
+    background-color: var(--bg-input);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+  .input:focus {
+    @apply border-primary;
+  }
+  .input::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* ── Theme-aware nav backgrounds ── */
+  .nav-bg {
+    background-color: var(--bg-nav);
+    border-color: var(--border-color);
+  }
+
+  /* ── Theme-aware card backgrounds ── */
+  .theme-card {
+    background-color: var(--bg-card);
+    border-color: var(--border-color);
+  }
+
+  /* ── Subtle hover background ── */
+  .hover-bg:hover {
+    background-color: var(--bg-card-alt);
   }
 }
 
@@ -56,4 +115,13 @@
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+
+  /* Convenience text color utilities using CSS vars */
+  .text-theme-primary   { color: var(--text-primary); }
+  .text-theme-secondary { color: var(--text-secondary); }
+  .text-theme-muted     { color: var(--text-muted); }
+  .bg-theme-primary     { background-color: var(--bg-primary); }
+  .bg-theme-secondary   { background-color: var(--bg-secondary); }
+  .bg-theme-card        { background-color: var(--bg-card); }
+  .border-theme         { border-color: var(--border-color); }
 }

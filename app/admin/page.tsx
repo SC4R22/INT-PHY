@@ -75,10 +75,10 @@ export default async function AdminDashboard() {
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-6 md:mb-8">
-        <h1 className="text-3xl md:text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">
+        <h1 className="text-3xl md:text-4xl font-black text-theme-primary uppercase italic font-payback mb-2">
           Admin Dashboard
         </h1>
-        <p className="text-[#B3B3B3]">
+        <p className="text-theme-secondary">
           Overview of platform statistics and activity
         </p>
       </div>
@@ -117,8 +117,8 @@ export default async function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Enrollments */}
-        <div className="bg-[#2A2A2A] rounded-xl p-6 shadow-xl">
-          <h2 className="text-2xl font-bold text-[#EFEFEF] mb-4">
+        <div className="bg-theme-card rounded-xl p-6 shadow-xl border border-[var(--border-color)]">
+          <h2 className="text-2xl font-bold text-theme-primary mb-4">
             Recent Enrollments
           </h2>
           <div className="space-y-3">
@@ -126,23 +126,23 @@ export default async function AdminDashboard() {
               recentEnrollments.map((enrollment: any) => (
                 <div
                   key={enrollment.id}
-                  className="p-4 bg-[#3A3A3A] rounded-lg flex justify-between items-center"
+                  className="p-4 bg-[var(--bg-card-alt)] rounded-lg flex justify-between items-center"
                 >
                   <div>
-                    <p className="text-[#EFEFEF] font-semibold">
+                    <p className="text-theme-primary font-semibold">
                       {enrollment.user?.full_name ?? '—'}
                     </p>
-                    <p className="text-[#B3B3B3] text-sm">
+                    <p className="text-theme-secondary text-sm">
                       {enrollment.course?.title ?? '—'}
                     </p>
                   </div>
-                  <span className="text-[#6A0DAD] text-sm">
+                  <span className="text-primary text-sm">
                     {new Date(enrollment.enrolled_at).toLocaleDateString()}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-[#B3B3B3] text-center py-8">
+              <p className="text-theme-secondary text-center py-8">
                 No enrollments yet
               </p>
             )}
@@ -150,8 +150,8 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Top Courses */}
-        <div className="bg-[#2A2A2A] rounded-xl p-6 shadow-xl">
-          <h2 className="text-2xl font-bold text-[#EFEFEF] mb-4">
+        <div className="bg-theme-card rounded-xl p-6 shadow-xl border border-[var(--border-color)]">
+          <h2 className="text-2xl font-bold text-theme-primary mb-4">
             Top Courses by Enrollment
           </h2>
           <div className="space-y-3">
@@ -159,23 +159,23 @@ export default async function AdminDashboard() {
               topCoursesWithTitles.map((course, index) => (
                 <div
                   key={course.courseId}
-                  className="p-4 bg-[#3A3A3A] rounded-lg flex justify-between items-center"
+                  className="p-4 bg-[var(--bg-card-alt)] rounded-lg flex justify-between items-center"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold text-[#6A0DAD]">
+                    <span className="text-2xl font-bold text-primary">
                       #{index + 1}
                     </span>
-                    <p className="text-[#EFEFEF] font-semibold">
+                    <p className="text-theme-primary font-semibold">
                       {course.title}
                     </p>
                   </div>
-                  <span className="text-[#6A0DAD] font-bold text-lg">
+                  <span className="text-primary font-bold text-lg">
                     {course.count} students
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-[#B3B3B3] text-center py-8">
+              <p className="text-theme-secondary text-center py-8">
                 No course data yet
               </p>
             )}
@@ -213,7 +213,7 @@ function StatCard({
   value,
   icon,
   trend,
-  trendColor = 'text-[#B3B3B3]',
+  trendColor = 'text-theme-secondary',
 }: {
   title: string
   value: number
@@ -222,13 +222,13 @@ function StatCard({
   trendColor?: string
 }) {
   return (
-    <div className="bg-gradient-to-br from-[#2A2A2A] to-[#3A3A3A] rounded-xl p-6 shadow-xl border-2 border-[#6A0DAD]">
+    <div className="bg-theme-card rounded-xl p-6 shadow-xl border-2 border-primary">
       <div className="flex items-center justify-between mb-4">
         <span className="text-4xl">{icon}</span>
         <span className={`text-sm font-semibold ${trendColor}`}>{trend}</span>
       </div>
-      <h3 className="text-[#B3B3B3] text-sm font-semibold mb-1">{title}</h3>
-      <p className="text-4xl font-black text-[#EFEFEF]">{value}</p>
+      <h3 className="text-theme-secondary text-sm font-semibold mb-1 uppercase tracking-wide">{title}</h3>
+      <p className="text-4xl font-black text-theme-primary">{value}</p>
     </div>
   )
 }
@@ -247,15 +247,15 @@ function QuickAction({
   return (
     <a
       href={href}
-      className="bg-[#2A2A2A] rounded-xl p-6 shadow-xl hover:shadow-[#6A0DAD]/20 transition-all hover:-translate-y-1 border-2 border-transparent hover:border-[#6A0DAD] group"
+      className="bg-theme-card rounded-xl p-6 shadow-xl transition-all hover:-translate-y-1 border-2 border-[var(--border-color)] hover:border-primary group"
     >
       <div className="flex items-center gap-4 mb-3">
         <span className="text-4xl group-hover:scale-110 transition-transform">
           {icon}
         </span>
-        <h3 className="text-xl font-bold text-[#EFEFEF]">{title}</h3>
+        <h3 className="text-xl font-bold text-theme-primary">{title}</h3>
       </div>
-      <p className="text-[#B3B3B3]">{description}</p>
+      <p className="text-theme-secondary">{description}</p>
     </a>
   )
 }

@@ -47,6 +47,8 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [buffered, setBuffered] = useState(0)
   const [seeking, setSeeking] = useState(false)
+  const [dragPct, setDragPct] = useState<number | null>(null) // live pct while dragging
+  const isDraggingRef = useRef(false)
 
   // ── Load HLS or native ────────────────────────────────────────────────────
   useEffect(() => {
@@ -210,16 +212,86 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
     return () => window.removeEventListener('keydown', onKey)
   }, []) // stable — reads from refs, never needs to re-register
 
-  // ── Progress bar scrubbing ────────────────────────────────────────────────
+  // ── Progress bar scrubbing (click + drag + touch) ────────────────────────
+  const getPctFromClientX = useCallback((clientX: number) => {
+    const bar = progressRef.current
+    if (!bar) return 0
+    const rect = bar.getBoundingClientRect()
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+  }, [])
+
   const seekTo = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const video = videoRef.current
-    const bar = progressRef.current
-    if (!video || !bar || !duration) return
-    const rect = bar.getBoundingClientRect()
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    if (!video || !duration) return
+    const pct = getPctFromClientX(e.clientX)
     video.currentTime = pct * duration
     setCurrentTime(pct * duration)
-  }, [duration])
+  }, [duration, getPctFromClientX])
+
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    isDraggingRef.current = true
+    setSeeking(true)
+    const pct = getPctFromClientX(e.clientX)
+    setDragPct(pct)
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDraggingRef.current) return
+      const p = getPctFromClientX(ev.clientX)
+      setDragPct(p)
+    }
+
+    const onMouseUp = (ev: MouseEvent) => {
+      if (!isDraggingRef.current) return
+      isDraggingRef.current = false
+      setSeeking(false)
+      const p = getPctFromClientX(ev.clientX)
+      setDragPct(null)
+      const video = videoRef.current
+      if (video && duration) {
+        video.currentTime = p * duration
+        setCurrentTime(p * duration)
+      }
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }, [duration, getPctFromClientX])
+
+  const handleProgressTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    isDraggingRef.current = true
+    setSeeking(true)
+    const touch = e.touches[0]
+    const pct = getPctFromClientX(touch.clientX)
+    setDragPct(pct)
+
+    const onTouchMove = (ev: TouchEvent) => {
+      if (!isDraggingRef.current) return
+      const p = getPctFromClientX(ev.touches[0].clientX)
+      setDragPct(p)
+    }
+
+    const onTouchEnd = (ev: TouchEvent) => {
+      if (!isDraggingRef.current) return
+      isDraggingRef.current = false
+      setSeeking(false)
+      const p = getPctFromClientX(ev.changedTouches[0].clientX)
+      setDragPct(null)
+      const video = videoRef.current
+      if (video && duration) {
+        video.currentTime = p * duration
+        setCurrentTime(p * duration)
+      }
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onTouchEnd)
+    }
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false })
+    document.addEventListener('touchend', onTouchEnd)
+  }, [duration, getPctFromClientX])
 
   // ── Video event handlers ──────────────────────────────────────────────────
   const handleTimeUpdate = useCallback(() => {
@@ -254,6 +326,8 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
   }, [])
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0
+  // While dragging show the drag position, otherwise show real playback position
+  const displayPct = dragPct !== null ? dragPct * 100 : progressPct
 
   return (
     <div
@@ -351,8 +425,8 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
           ref={progressRef}
           className="relative w-full h-1 bg-white/30 rounded-full mb-3 cursor-pointer group/progress"
           onClick={seekTo}
-          onMouseDown={() => setSeeking(true)}
-          onMouseUp={() => setSeeking(false)}
+          onMouseDown={handleProgressMouseDown}
+          onTouchStart={handleProgressTouchStart}
         >
           {/* Buffered */}
           <div
@@ -361,13 +435,17 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
           />
           {/* Played */}
           <div
-            className="absolute left-0 top-0 h-full bg-[#6A0DAD] rounded-full transition-all group-hover/progress:h-1.5 group-hover/progress:-translate-y-px"
-            style={{ width: `${progressPct}%` }}
+            className={`absolute left-0 top-0 h-full bg-[#6A0DAD] rounded-full ${
+              seeking ? '' : 'transition-all'
+            } group-hover/progress:h-1.5 group-hover/progress:-translate-y-px`}
+            style={{ width: `${displayPct}%` }}
           />
           {/* Scrubber thumb */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#6A0DAD] rounded-full shadow-lg opacity-0 group-hover/progress:opacity-100 transition-opacity"
-            style={{ left: `calc(${progressPct}% - 7px)` }}
+            className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#6A0DAD] rounded-full shadow-lg transition-opacity ${
+              seeking ? 'opacity-100 scale-125' : 'opacity-0 group-hover/progress:opacity-100'
+            }`}
+            style={{ left: `calc(${displayPct}% - 7px)` }}
           />
         </div>
 
