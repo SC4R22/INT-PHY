@@ -3,30 +3,23 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function login(phoneNumber: string, password: string) {
   const supabase = await createClient()
 
-  // Convert phone to email format
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '')
   const email = `${cleanPhone}@intphy.app`
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return { error: error.message }
   }
 
-  // Check role to redirect admins/teachers to admin panel
   const { data: { user } } = await supabase.auth.getUser()
   let redirectTo = '/dashboard'
   if (user) {
-    const admin = createAdminClient()
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
@@ -44,45 +37,40 @@ export async function signup(
   fullName: string,
   phoneNumber: string,
   password: string,
+  grade: string,
   parentName?: string,
   parentPhoneNumber?: string
 ) {
-  // ── Server-side input validation ─────────────────────────────────────────
   const trimmedName = (fullName ?? '').trim()
   const trimmedPhone = (phoneNumber ?? '').trim()
   const trimmedParentName = (parentName ?? '').trim()
   const trimmedParentPhone = (parentPhoneNumber ?? '').trim()
 
-  if (!trimmedName || trimmedName.length > 100) {
+  if (!trimmedName || trimmedName.length > 100)
     return { error: 'Full name is required and must be under 100 characters.' }
-  }
-  if (!trimmedPhone || trimmedPhone.length > 20) {
+  if (!trimmedPhone || trimmedPhone.length > 20)
     return { error: 'Phone number is required and must be under 20 characters.' }
-  }
-  if (!password || password.length < 8) {
+
+  const validGrades = ['prep_1','prep_2','prep_3','sec_1','sec_2','sec_3']
+  if (!grade || !validGrades.includes(grade))
+    return { error: 'Please select a valid grade.' }
+  if (!password || password.length < 8)
     return { error: 'Password must be at least 8 characters.' }
-  }
-  if (password.length > 72) {
+  if (password.length > 72)
     return { error: 'Password must be under 72 characters.' }
-  }
-  if (trimmedParentName.length > 100) {
+  if (trimmedParentName.length > 100)
     return { error: 'Parent name must be under 100 characters.' }
-  }
-  if (trimmedParentPhone.length > 20) {
+  if (trimmedParentPhone.length > 20)
     return { error: 'Parent phone number must be under 20 characters.' }
-  }
-  // Only allow digits, spaces, +, -, (, ) in phone fields
+
   const phonePattern = /^[0-9 +\-().]{7,20}$/
-  if (!phonePattern.test(trimmedPhone)) {
+  if (!phonePattern.test(trimmedPhone))
     return { error: 'Please enter a valid phone number.' }
-  }
-  if (trimmedParentPhone && !phonePattern.test(trimmedParentPhone)) {
+  if (trimmedParentPhone && !phonePattern.test(trimmedParentPhone))
     return { error: 'Please enter a valid parent phone number.' }
-  }
 
   const supabase = await createClient()
 
-  // Convert phone to email format
   const cleanPhone = trimmedPhone.replace(/[^0-9]/g, '')
   const email = `${cleanPhone}@intphy.app`
 
@@ -96,6 +84,7 @@ export async function signup(
         phone_number: trimmedPhone,
         parent_phone_number: trimmedParentPhone || null,
         role: 'student',
+        grade,
       },
     },
   })
@@ -117,17 +106,10 @@ export async function signout() {
 
 export async function refreshSession() {
   const supabase = await createClient()
-  
-  // Force refresh the session
   const { data: { session } } = await supabase.auth.getSession()
-  
   if (session) {
-    // Refresh the access token
     await supabase.auth.refreshSession()
   }
-  
-  // Revalidate all paths to clear any cached data
   revalidatePath('/', 'layout')
-  
   return { success: true }
 }

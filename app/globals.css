@@ -4,20 +4,23 @@
 
 @layer base {
   :root {
-    --font-payback: 'Payback', sans-serif;
-    --font-inter: 'Inter', sans-serif;
+
+    /* Brand */
+    --brand-primary:   #FF7802;
+    --brand-gradient:  linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%);
+    --brand-gradient-diagonal: linear-gradient(135deg, #FD1D1D 0%, #FCB045 100%);
 
     /* ── Light mode CSS variables ── */
-    --bg-primary:    #F5F5F7;
+    --bg-primary:    #F5F5F5;
     --bg-secondary:  #FFFFFF;
     --bg-card:       #FFFFFF;
-    --bg-card-alt:   #F0F0F4;
+    --bg-card-alt:   #F0F0F0;
     --bg-nav:        #FFFFFF;
-    --bg-input:      #F5F5F7;
-    --border-color:  #D1D1D6;
-    --text-primary:  #1A1A2E;
-    --text-secondary:#4A4A6A;
-    --text-muted:    #6E6E8A;
+    --bg-input:      #F5F5F5;
+    --border-color:  #D1D1D1;
+    --text-primary:  #1A1A1A;
+    --text-secondary:#4A4A4A;
+    --text-muted:    #6E6E6E;
     --shadow:        0 1px 3px rgba(0,0,0,0.1);
   }
 
@@ -39,12 +42,17 @@
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    @apply font-inter transition-colors duration-200;
+    /* Tajawal Regular - body text */
+    font-family: var(--font-tajawal), sans-serif;
+    font-weight: 400;
+    @apply transition-colors duration-200;
   }
 
   h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
-    @apply font-payback;
+    /* Cairo Bold - all headings */
+    font-family: var(--font-cairo), sans-serif;
+    font-weight: 700;
   }
 
   a, button {
@@ -58,11 +66,34 @@
   }
 
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-600 active:bg-primary-700;
+    background: var(--brand-gradient);
+    @apply text-white font-bold;
+  }
+  .btn-primary:hover {
+    background: var(--brand-gradient-diagonal);
+    @apply opacity-90;
   }
 
   .btn-secondary {
-    @apply bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white;
+    @apply bg-transparent border-2 text-primary hover:text-white;
+    border-image: var(--brand-gradient) 1;
+  }
+
+  /* ── Gradient border utility ── */
+  .border-brand {
+    position: relative;
+  }
+  .border-brand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: var(--brand-gradient);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
   /* ── Theme-aware card ── */
@@ -79,25 +110,22 @@
     color: var(--text-primary);
   }
   .input:focus {
-    @apply border-primary;
+    border-color: var(--brand-primary);
   }
   .input::placeholder {
     color: var(--text-muted);
   }
 
-  /* ── Theme-aware nav backgrounds ── */
   .nav-bg {
     background-color: var(--bg-nav);
     border-color: var(--border-color);
   }
 
-  /* ── Theme-aware card backgrounds ── */
   .theme-card {
     background-color: var(--bg-card);
     border-color: var(--border-color);
   }
 
-  /* ── Subtle hover background ── */
   .hover-bg:hover {
     background-color: var(--bg-card-alt);
   }
@@ -105,7 +133,26 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+    background: var(--brand-gradient);
+    @apply bg-clip-text text-transparent;
+  }
+
+  .bg-brand-gradient {
+    background: var(--brand-gradient);
+  }
+
+  .border-brand-gradient {
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  .border-brand-gradient::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: var(--brand-gradient);
+    z-index: -1;
   }
 
   .section-padding {
@@ -116,7 +163,6 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Convenience text color utilities using CSS vars */
   .text-theme-primary   { color: var(--text-primary); }
   .text-theme-secondary { color: var(--text-secondary); }
   .text-theme-muted     { color: var(--text-muted); }

@@ -21,7 +21,6 @@ export default function AccessCodesPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  // Generate form
   const [genForm, setGenForm] = useState({ course_id: '', quantity: '1', expires_in_days: '' })
 
   const fetchData = useCallback(async () => {
@@ -37,26 +36,14 @@ export default function AccessCodesPage() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!genForm.course_id) { setError('Please select a course'); return }
-    setGenerating(true)
-    setError(null)
-    setSuccess(null)
-
+    if (!genForm.course_id) { setError('من فضلك اختر كورسا'); return }
+    setGenerating(true); setError(null); setSuccess(null)
     const quantity = Math.min(parseInt(genForm.quantity) || 1, 100)
     const expiresInDays = genForm.expires_in_days ? parseInt(genForm.expires_in_days) : undefined
-
-    // Use the server action — role is verified server-side
     const result = await generateAccessCodes(genForm.course_id, quantity, expiresInDays)
-
-    if (!result.success) {
-      setError(result.error || 'Failed to generate codes')
-      setGenerating(false)
-      return
-    }
-
-    setSuccess(`✓ Generated ${quantity} access code${quantity > 1 ? 's' : ''} successfully`)
-    setGenerating(false)
-    fetchData()
+    if (!result.success) { setError(result.error || 'فشل توليد الأكواد'); setGenerating(false); return }
+    setSuccess(`✓ تم توليد ${quantity} كود بنجاح`)
+    setGenerating(false); fetchData()
     setTimeout(() => setSuccess(null), 4000)
   }
 
@@ -67,13 +54,9 @@ export default function AccessCodesPage() {
   }
 
   const deleteCode = async (id: string) => {
-    if (!confirm('Delete this unused code?')) return
-    // Use the server action — role is verified server-side
+    if (!confirm('حذف هذا الكود غير المستخدم؟')) return
     const result = await deleteAccessCode(id)
-    if (!result.success) {
-      setError(result.error || 'Failed to delete code')
-      return
-    }
+    if (!result.success) { setError(result.error || 'فشل حذف الكود'); return }
     fetchData()
   }
 
@@ -96,59 +79,58 @@ export default function AccessCodesPage() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
+    <div className="p-4 md:p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-black text-[#EFEFEF] uppercase italic font-payback mb-2">Access Codes</h1>
-        <p className="text-[#B3B3B3]">Generate and manage enrollment codes for students</p>
+        <h1 className="text-4xl font-black text-theme-primary uppercase italic font-payback mb-2">أكواد الدخول</h1>
+        <p className="text-theme-secondary">توليد وإدارة أكواد التسجيل للطلاب</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Codes', value: stats.total, color: 'border-[#6A0DAD]', textColor: 'text-[#EFEFEF]' },
-          { label: 'Available', value: stats.available, color: 'border-green-500', textColor: 'text-green-400' },
-          { label: 'Used', value: stats.used, color: 'border-blue-500', textColor: 'text-blue-400' },
-          { label: 'Expired', value: stats.expired, color: 'border-red-500', textColor: 'text-red-400' },
+          { label: 'إجمالي الأكواد', value: stats.total, border: 'border-primary', text: 'text-theme-primary' },
+          { label: 'متاح', value: stats.available, border: 'border-green-500', text: 'text-green-600 dark:text-green-400' },
+          { label: 'مستخدم', value: stats.used, border: 'border-primary', text: 'text-primary' },
+          { label: 'منتهي', value: stats.expired, border: 'border-red-500', text: 'text-red-600 dark:text-red-400' },
         ].map(s => (
-          <div key={s.label} className={`bg-[#2A2A2A] rounded-lg p-4 border-l-4 ${s.color}`}>
-            <p className="text-[#B3B3B3] text-sm">{s.label}</p>
-            <p className={`text-3xl font-bold ${s.textColor}`}>{s.value}</p>
+          <div key={s.label} className={`bg-theme-card rounded-lg p-4 border-l-4 ${s.border}`}>
+            <p className="text-theme-secondary text-sm">{s.label}</p>
+            <p className={`text-3xl font-bold ${s.text}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Generate form */}
-      <div className="bg-[#2A2A2A] rounded-xl p-6 mb-8 border-2 border-[#6A0DAD]">
-        <h2 className="text-xl font-bold text-[#EFEFEF] mb-4">🎟️ Generate New Codes</h2>
-        {error && <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm font-semibold">{error}</div>}
-        {success && <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-400 text-sm font-semibold">{success}</div>}
+      <div className="bg-theme-card rounded-xl p-6 mb-8 border-2 border-primary">
+        <h2 className="text-xl font-bold text-theme-primary mb-4">🎟️ توليد أكواد جديدة</h2>
+        {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-600 dark:text-red-400 text-sm font-semibold">{error}</div>}
+        {success && <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-sm font-semibold">{success}</div>}
 
         <form onSubmit={handleGenerate} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-[#B3B3B3] text-xs font-bold mb-1 uppercase tracking-wider">Course *</label>
+            <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">الكورس *</label>
             <select value={genForm.course_id} onChange={e => setGenForm(p => ({ ...p, course_id: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-[#1a1a1a] border-2 border-[#3A3A3A] focus:border-[#6A0DAD] rounded-lg text-[#EFEFEF] outline-none">
-              <option value="">Select a course...</option>
+              className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none">
+              <option value="">اختر كورس...</option>
               {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[#B3B3B3] text-xs font-bold mb-1 uppercase tracking-wider">Quantity (max 100)</label>
+            <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">الكمية (أقصى 100)</label>
             <input type="number" min="1" max="100" value={genForm.quantity}
               onChange={e => setGenForm(p => ({ ...p, quantity: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-[#1a1a1a] border-2 border-[#3A3A3A] focus:border-[#6A0DAD] rounded-lg text-[#EFEFEF] outline-none" />
+              className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none" />
           </div>
           <div>
-            <label className="block text-[#B3B3B3] text-xs font-bold mb-1 uppercase tracking-wider">Expires in (days)</label>
-            <input type="number" min="1" placeholder="Never" value={genForm.expires_in_days}
+            <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">تنتهي خلال (أيام)</label>
+            <input type="number" min="1" placeholder="لا تنتهي" value={genForm.expires_in_days}
               onChange={e => setGenForm(p => ({ ...p, expires_in_days: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-[#1a1a1a] border-2 border-[#3A3A3A] focus:border-[#6A0DAD] rounded-lg text-[#EFEFEF] outline-none placeholder:text-gray-600" />
+              className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none placeholder:text-theme-muted" />
           </div>
           <div className="md:col-span-4">
             <button type="submit" disabled={generating}
-              className="px-8 py-3 bg-[#6A0DAD] text-white font-bold rounded-lg hover:bg-[#8B2CAD] transition-all disabled:opacity-50 shadow-lg">
-              {generating ? 'Generating...' : `Generate ${genForm.quantity || 1} Code${parseInt(genForm.quantity) > 1 ? 's' : ''}`}
+              className="px-8 py-3 text-white font-bold rounded-lg transition-all disabled:opacity-50 shadow-lg" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
+              {generating ? 'جاري التوليد...' : `توليد ${genForm.quantity || 1} كود`}
             </button>
           </div>
         </form>
@@ -157,79 +139,79 @@ export default function AccessCodesPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
         <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
-          className="px-3 py-2 bg-[#2A2A2A] border-2 border-[#3A3A3A] rounded-lg text-[#EFEFEF] text-sm outline-none focus:border-[#6A0DAD]">
-          <option value="all">All Courses</option>
+          className="px-3 py-2 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-lg text-theme-primary text-sm outline-none focus:border-primary">
+          <option value="all">كل الكورسات</option>
           {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="px-3 py-2 bg-[#2A2A2A] border-2 border-[#3A3A3A] rounded-lg text-[#EFEFEF] text-sm outline-none focus:border-[#6A0DAD]">
-          <option value="all">All Statuses</option>
-          <option value="available">Available</option>
-          <option value="used">Used</option>
-          <option value="expired">Expired</option>
+          className="px-3 py-2 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-lg text-theme-primary text-sm outline-none focus:border-primary">
+          <option value="all">كل الحالات</option>
+          <option value="available">متاح</option>
+          <option value="used">مستخدم</option>
+          <option value="expired">منتهي</option>
         </select>
-        <span className="px-3 py-2 text-[#B3B3B3] text-sm">{filteredCodes.length} codes shown</span>
+        <span className="px-3 py-2 text-theme-secondary text-sm">يظهر {filteredCodes.length} كود</span>
       </div>
 
       {/* Codes table */}
-      <div className="bg-[#2A2A2A] rounded-xl overflow-hidden">
+      <div className="bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#6A0DAD]">
+            <thead style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
               <tr>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Code</th>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Course</th>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Status</th>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Used By</th>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Expires</th>
-                <th className="px-6 py-3 text-left text-[#EFEFEF] font-bold text-sm">Created</th>
-                <th className="px-6 py-3 text-right text-[#EFEFEF] font-bold text-sm">Actions</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">الكود</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">الكورس</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">الحالة</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">استخدمه</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">ينتهي</th>
+                <th className="px-6 py-3 text-right text-white font-bold text-sm">تاريخ الإنشاء</th>
+                <th className="px-6 py-3 text-left text-white font-bold text-sm">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-[#3A3A3A]">
+            <tbody className="divide-y-2 divide-[var(--border-color)]">
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-[#B3B3B3] animate-pulse">Loading codes...</td></tr>
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-theme-secondary animate-pulse">جاري التحميل...</td></tr>
               ) : filteredCodes.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-[#B3B3B3]">No codes found</td></tr>
+                <tr><td colSpan={7} className="px-6 py-8 text-center text-theme-secondary">لا توجد أكواد</td></tr>
               ) : filteredCodes.map(code => {
                 const isExpired = code.expires_at && new Date(code.expires_at) < new Date()
                 const status = code.is_used ? 'used' : isExpired ? 'expired' : 'available'
                 return (
-                  <tr key={code.id} className="hover:bg-[#3A3A3A] transition-colors">
+                  <tr key={code.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
                     <td className="px-6 py-3">
-                      <span className="font-mono text-[#EFEFEF] font-bold tracking-widest text-sm">{code.code}</span>
+                      <span className="font-mono text-theme-primary font-bold tracking-widest text-sm">{code.code}</span>
                     </td>
-                    <td className="px-6 py-3 text-[#B3B3B3] text-sm">{code.course?.title || '—'}</td>
+                    <td className="px-6 py-3 text-theme-secondary text-sm">{code.course?.title || '—'}</td>
                     <td className="px-6 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        status === 'available' ? 'bg-green-500/20 text-green-400' :
-                        status === 'used' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-red-500/20 text-red-400'
+                        status === 'available' ? 'bg-green-500/20 text-green-700 dark:text-green-400' :
+                        status === 'used' ? 'bg-primary/20 text-primary' :
+                        'bg-red-500/20 text-red-600 dark:text-red-400'
                       }`}>
-                        {status.toUpperCase()}
+                        {status === 'available' ? 'متاح' : status === 'used' ? 'مستخدم' : 'منتهي'}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-[#B3B3B3] text-sm">
+                    <td className="px-6 py-3 text-theme-secondary text-sm">
                       {code.used_by_profile ? `${code.used_by_profile.full_name} (${code.used_by_profile.phone_number})` : '—'}
                     </td>
-                    <td className="px-6 py-3 text-[#B3B3B3] text-sm">
-                      {code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never'}
+                    <td className="px-6 py-3 text-theme-secondary text-sm">
+                      {code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'لا تنتهي'}
                     </td>
-                    <td className="px-6 py-3 text-[#B3B3B3] text-sm">
+                    <td className="px-6 py-3 text-theme-secondary text-sm">
                       {new Date(code.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex justify-end gap-2">
                         {!code.is_used && (
                           <button onClick={() => copyCode(code.code, code.id)}
-                            className="px-3 py-1 bg-[#6A0DAD]/30 text-[#B3B3B3] hover:text-[#EFEFEF] text-xs font-semibold rounded transition-colors">
-                            {copiedId === code.id ? '✓ Copied' : 'Copy'}
+                            className="px-3 py-1 bg-primary/20 hover:bg-primary/30 text-primary text-xs font-semibold rounded transition-colors">
+                            {copiedId === code.id ? '✓ تم النسخ' : 'نسخ'}
                           </button>
                         )}
                         {!code.is_used && (
                           <button onClick={() => deleteCode(code.id)}
-                            className="px-3 py-1 bg-red-600/20 text-red-400 text-xs font-semibold rounded hover:bg-red-600/40 transition-colors">
-                            Delete
+                            className="px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold rounded hover:bg-red-500/30 transition-colors">
+                            حذف
                           </button>
                         )}
                       </div>

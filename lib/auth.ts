@@ -123,35 +123,15 @@ export async function signOut() {
 }
 
 /**
- * Get the current user's session
- */
-export async function getSession() {
-  const supabase = createClient()
-  const { data, error } = await supabase.auth.getSession()
-  return { data, error }
-}
-
-/**
- * Get the current user
+ * Get the current user (validated via server — use auth.getUser() not getSession())
+ * NOTE: Prefer using server-side getCurrentUser() from lib/roles.ts in Server Components.
+ * This client-side version is for use only in Client Components.
  */
 export async function getUser() {
   const supabase = createClient()
+  // Always use getUser() — never getSession() client-side, as getSession() reads from
+  // insecure local storage without re-validating the JWT with the Supabase server.
   const { data, error } = await supabase.auth.getUser()
-  return { data, error }
-}
-
-/**
- * Get user profile by ID
- */
-export async function getUserProfile(userId: string) {
-  const supabase = createClient()
-  
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  
   return { data, error }
 }
 

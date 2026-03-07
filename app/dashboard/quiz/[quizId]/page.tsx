@@ -38,7 +38,6 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
     const load = async () => {
       setLoading(true)
       try {
-        // Fetch quiz questions and existing submission in parallel
         const [quizRes, subRes] = await Promise.all([
           fetch(`/api/quiz?quizId=${quizId}&getQuestions=1`),
           fetch(`/api/quiz?quizId=${quizId}`)
@@ -61,7 +60,7 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
     if (!data) return
     const unanswered = data.questions.filter(q => !answers[q.id])
     if (unanswered.length > 0) {
-      setError(`Please answer all questions (${unanswered.length} remaining)`)
+      setError(`من فضلك أجب على كل الأسئلة (${unanswered.length} متبقية)`)
       return
     }
     setSubmitting(true); setError(null)
@@ -85,14 +84,14 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-[#25292D] flex items-center justify-center">
-      <div className="text-[#B3B3B3] text-xl animate-pulse">Loading quiz...</div>
+    <div className="min-h-screen bg-theme-primary flex items-center justify-center">
+      <div className="text-theme-secondary text-xl animate-pulse">جاري تحميل الاختبار...</div>
     </div>
   )
 
   if (error && !data) return (
-    <div className="min-h-screen bg-[#25292D] flex items-center justify-center">
-      <div className="text-red-400 text-lg">{error}</div>
+    <div className="min-h-screen bg-theme-primary flex items-center justify-center">
+      <div className="text-red-600 dark:text-red-400 text-lg">{error}</div>
     </div>
   )
 
@@ -102,9 +101,9 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
   const displayResult = result ?? (showingPrevious ? data?.submission : null)
 
   return (
-    <div className="min-h-screen bg-[#25292D]">
+    <div className="min-h-screen bg-theme-primary">
       {/* Header */}
-      <header className="bg-[#1e2125] border-b-2 border-[#3A3A3A] sticky top-0 z-10">
+      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)] sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -113,13 +112,13 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
                 if (courseId) { router.push(`/dashboard/courses/${courseId}`); router.refresh() }
                 else { router.push('/dashboard'); router.refresh() }
               }}
-              className="text-[#B3B3B3] hover:text-[#EFEFEF] transition-colors text-sm font-semibold flex-shrink-0">← Back</button>
-            <span className="text-[#3A3A3A]">/</span>
-            <span className="text-[#EFEFEF] font-bold text-sm truncate">{data?.quiz.title}</span>
-            <span className="px-2 py-0.5 bg-yellow-600/30 text-yellow-400 text-xs font-bold rounded-full border border-yellow-600/40 flex-shrink-0">QUIZ</span>
+              className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold flex-shrink-0">← رجوع</button>
+            <span className="text-theme-muted">/</span>
+            <span className="text-theme-primary font-bold text-sm truncate">{data?.quiz.title}</span>
+            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold rounded-full border border-yellow-500/40 flex-shrink-0">اختبار</span>
           </div>
           {!isFinished && (
-            <span className="text-[#B3B3B3] text-sm flex-shrink-0 whitespace-nowrap">{answeredCount}/{questions.length}</span>
+            <span className="text-theme-secondary text-sm flex-shrink-0 whitespace-nowrap">{answeredCount}/{questions.length}</span>
           )}
         </div>
       </header>
@@ -128,11 +127,11 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
 
         {/* Locked redirect banner */}
         {isLockedRedirect && !isFinished && (
-          <div className="mb-6 p-4 bg-yellow-900/30 border-2 border-yellow-600/50 rounded-xl flex items-start gap-3">
+          <div className="mb-6 p-4 bg-yellow-500/10 border-2 border-yellow-500/40 rounded-xl flex items-start gap-3">
             <span className="text-2xl flex-shrink-0">🔒</span>
             <div>
-              <p className="text-yellow-400 font-bold text-sm">Quiz required to continue</p>
-              <p className="text-yellow-300/70 text-xs mt-0.5">You must complete this quiz before accessing the next videos in this module.</p>
+              <p className="text-yellow-600 dark:text-yellow-400 font-bold text-sm">الاختبار مطلوب للمتابعة</p>
+              <p className="text-yellow-600/70 dark:text-yellow-300/70 text-xs mt-0.5">يجب إكمال هذا الاختبار قبل الوصول للفيديوهات التالية في هذه الوحدة.</p>
             </div>
           </div>
         )}
@@ -141,66 +140,60 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
         {isFinished && displayResult && (
           <div className={`mb-8 rounded-2xl p-6 border-2 text-center ${
             (displayResult.score / displayResult.total) >= 0.6
-              ? 'bg-green-900/20 border-green-600/40'
-              : 'bg-red-900/20 border-red-600/40'
+              ? 'bg-green-500/10 border-green-500/40'
+              : 'bg-red-500/10 border-red-500/40'
           }`}>
             <p className="text-5xl mb-3">{(displayResult.score / displayResult.total) >= 0.6 ? '🎉' : '📖'}</p>
-            <p className={`text-3xl font-black mb-1 ${(displayResult.score / displayResult.total) >= 0.6 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-3xl font-black mb-1 ${(displayResult.score / displayResult.total) >= 0.6 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {displayResult.score} / {displayResult.total}
             </p>
-            <p className={`text-xl font-bold mb-3 ${(displayResult.score / displayResult.total) >= 0.6 ? 'text-green-300' : 'text-red-300'}`}>
+            <p className={`text-xl font-bold mb-3 ${(displayResult.score / displayResult.total) >= 0.6 ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'}`}>
               {Math.round((displayResult.score / displayResult.total) * 100)}%
             </p>
-            <p className="text-[#B3B3B3] text-sm mb-5">
+            <p className="text-theme-secondary text-sm mb-5">
               {(displayResult.score / displayResult.total) >= 0.6
-                ? 'Great job! You passed this quiz.'
-                : 'Keep studying and try again!'}
+                ? 'أحسنت! لقد نجحت في الاختبار.'
+                : 'ذاكر أكتر وحاول تاني!'}
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <button onClick={retake}
                 className="px-6 py-2.5 bg-yellow-600 text-white font-bold rounded-xl hover:bg-yellow-500 transition-colors text-sm">
-                🔄 Retake Quiz
+                🔄 إعادة الاختبار
               </button>
               <button
                 onClick={() => {
                   const courseId = data?.quiz.course_id
-                  if (courseId) {
-                    router.push(`/dashboard/courses/${courseId}`)
-                    router.refresh()
-                  } else {
-                    router.push('/dashboard')
-                    router.refresh()
-                  }
+                  if (courseId) { router.push(`/dashboard/courses/${courseId}`); router.refresh() }
+                  else { router.push('/dashboard'); router.refresh() }
                 }}
-                className="px-6 py-2.5 bg-[#3A3A3A] text-[#EFEFEF] font-bold rounded-xl hover:bg-[#4A4A4A] transition-colors text-sm">
-                ← Back to Course
+                className="px-6 py-2.5 bg-[var(--bg-card-alt)] hover:bg-[var(--border-color)] text-theme-primary font-bold rounded-xl transition-colors text-sm border border-[var(--border-color)]">
+                ← رجوع للكورس
               </button>
             </div>
           </div>
         )}
 
-        {/* Progress bar (while answering) */}
+        {/* Progress bar */}
         {!isFinished && (
           <div className="mb-6">
-            <div className="flex justify-between text-xs text-[#B3B3B3] mb-2">
-              <span>Progress</span>
-              <span>{answeredCount} of {questions.length} answered</span>
+            <div className="flex justify-between text-xs text-theme-secondary mb-2">
+              <span>التقدم</span>
+              <span>{answeredCount} من {questions.length} تمت إجابتها</span>
             </div>
-            <div className="w-full bg-[#1a1a1a] rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-[var(--bg-card-alt)] rounded-full h-2 overflow-hidden">
               <div className="bg-yellow-500 h-full transition-all" style={{ width: `${(answeredCount / questions.length) * 100}%` }} />
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-sm">{error}</div>
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-600 dark:text-red-400 text-sm">{error}</div>
         )}
 
         {/* Questions */}
         <div className="space-y-6">
           {questions.map((q, idx) => {
             const selected = answers[q.id]
-            const isCorrectAnswer = result?.correct?.[q.id] ?? (showingPrevious && data?.submission ? undefined : undefined)
             const opts = [
               { key: 'a', label: q.option_a },
               { key: 'b', label: q.option_b },
@@ -208,21 +201,21 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
               { key: 'd', label: q.option_d },
             ]
             return (
-              <div key={q.id} className={`bg-[#2A2A2A] rounded-xl p-5 border-2 transition-colors ${
-                selected ? 'border-yellow-600/50' : 'border-[#3A3A3A]'
+              <div key={q.id} className={`bg-theme-card rounded-xl p-5 border-2 transition-colors ${
+                selected ? 'border-yellow-500/60' : 'border-[var(--border-color)]'
               }`}>
                 <div className="flex gap-3 mb-4">
                   <span className="flex-shrink-0 w-7 h-7 bg-yellow-600 text-white rounded-full flex items-center justify-center text-sm font-black">{idx + 1}</span>
-                  <p className="text-[#EFEFEF] font-semibold text-base leading-snug">{q.question_text}</p>
+                  <p className="text-theme-primary font-semibold text-base leading-snug">{q.question_text}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {opts.map(opt => {
                     const isSelected = selected === opt.key
                     const isDisabled = isFinished
 
-                    let btnClass = 'border-[#3A3A3A] bg-[#1a1a1a] text-[#B3B3B3] hover:border-yellow-600 hover:text-[#EFEFEF]'
-                    if (isSelected && !isFinished) btnClass = 'border-yellow-600 bg-yellow-600/20 text-[#EFEFEF]'
-                    if (isFinished && isSelected) btnClass = 'border-yellow-600/60 bg-yellow-600/10 text-[#EFEFEF]'
+                    let btnClass = 'border-[var(--border-color)] bg-[var(--bg-input)] text-theme-secondary hover:border-yellow-500 hover:text-theme-primary'
+                    if (isSelected && !isFinished) btnClass = 'border-yellow-500 bg-yellow-500/20 text-theme-primary'
+                    if (isFinished && isSelected) btnClass = 'border-yellow-500/60 bg-yellow-500/10 text-theme-primary'
 
                     return (
                       <button
@@ -232,7 +225,7 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
                         className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border-2 text-left transition-all ${btnClass} ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
                       >
                         <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black uppercase flex-shrink-0 border-2 transition-colors ${
-                          isSelected ? 'bg-yellow-600 border-yellow-600 text-white' : 'border-[#555] text-[#555]'
+                          isSelected ? 'bg-yellow-600 border-yellow-600 text-white' : 'border-[var(--text-muted)] text-theme-muted'
                         }`}>{opt.key}</span>
                         <span className="text-sm font-medium">{opt.label}</span>
                       </button>
@@ -252,10 +245,10 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
               disabled={submitting || answeredCount < questions.length}
               className="w-full sm:w-auto px-10 py-4 bg-yellow-600 text-white font-black text-lg rounded-2xl hover:bg-yellow-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Submitting...' : '✓ Submit Quiz'}
+              {submitting ? 'جاري التسليم...' : '✓ تسليم الاختبار'}
             </button>
             {answeredCount < questions.length && (
-              <p className="text-[#B3B3B3] text-sm">{questions.length - answeredCount} question{questions.length - answeredCount > 1 ? 's' : ''} left to answer</p>
+              <p className="text-theme-secondary text-sm">{questions.length - answeredCount} سؤال متبقي للإجابة</p>
             )}
           </div>
         )}

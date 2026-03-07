@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,9 +15,8 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Use admin client to bypass RLS — user identity already verified above
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  // Use RLS-scoped server client — user can only read their own profile row
+  const { data: profile } = await supabase
     .from('user_profiles')
     .select('is_banned')
     .eq('id', user.id)

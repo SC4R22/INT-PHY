@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminSidebar } from '@/components/admin-sidebar'
 
 export default async function AdminLayout({
@@ -16,9 +15,8 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
-  // Use admin client to bypass RLS — identity already verified above
-  const admin = createAdminClient()
-  const { data: profile } = await admin
+  // RLS-scoped read — user can only read their own profile row, no admin client needed
+  const { data: profile } = await supabase
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)

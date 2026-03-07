@@ -52,9 +52,10 @@ export async function POST(
   }
 
   // Update
-  const { title, description, price_cash, is_free, published, thumbnail_url } = body
+  const { title, description, price_cash, is_free, published, thumbnail_url, target_grade } = body
   const updateData: any = { title, description, price_cash, is_free, published }
   if (thumbnail_url !== undefined) updateData.thumbnail_url = thumbnail_url
+  if (target_grade !== undefined) updateData.target_grade = target_grade || null
   const { error } = await admin
     .from('courses')
     .update(updateData)

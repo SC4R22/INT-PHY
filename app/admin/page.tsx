@@ -61,57 +61,66 @@ export default async function AdminDashboard() {
     .order('total_enrollments', { ascending: false })
     .limit(5)
 
-  const topCoursesWithTitles = await Promise.all(
-    (topCoursesData ?? []).map(async (row: any) => {
-      const course = courseMap.get(row.course_id)
-      if (course) return { courseId: row.course_id, title: (course as any).title, count: row.total_enrollments }
-      // Fetch if not already in map
-      const { data } = await supabase.from('courses').select('title').eq('id', row.course_id).single()
-      return { courseId: row.course_id, title: data?.title ?? 'Unknown', count: row.total_enrollments ?? 0 }
-    })
-  )
+  // Gather any top course IDs not already in courseMap, then batch-fetch them
+  const missingCourseIds = (topCoursesData ?? [])
+    .map((row: any) => row.course_id)
+    .filter((id: string) => !courseMap.has(id))
+
+  if (missingCourseIds.length > 0) {
+    const { data: extraCourses } = await supabase
+      .from('courses')
+      .select('id, title')
+      .in('id', missingCourseIds)
+    for (const c of extraCourses ?? []) courseMap.set(c.id, c)
+  }
+
+  const topCoursesWithTitles = (topCoursesData ?? []).map((row: any) => ({
+    courseId: row.course_id,
+    title: (courseMap.get(row.course_id) as any)?.title ?? 'Unknown',
+    count: row.total_enrollments ?? 0,
+  }))
 
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl md:text-4xl font-black text-theme-primary uppercase italic font-payback mb-2">
-          Admin Dashboard
+          داشبورد الأدمين
         </h1>
         <p className="text-theme-secondary">
-          Overview of platform statistics and activity
+          نظرة عامة على إحصائيات المنصة
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
-          title="Total Students"
+          title="إجمالي الطلاب"
           value={totalStudents || 0}
           icon="👥"
-          trend="All time"
+          trend="منذ البداية"
           trendColor="text-[#B3B3B3]"
         />
         <StatCard
-          title="Total Courses"
+          title="إجمالي الكورسات"
           value={totalCourses || 0}
           icon="📚"
-          trend="Published + Drafts"
+          trend="منشورة + مسودة"
           trendColor="text-[#B3B3B3]"
         />
         <StatCard
-          title="Total Enrollments"
+          title="إجمالي الاشتراكات"
           value={totalEnrollments || 0}
           icon="📝"
-          trend="All courses"
+          trend="كل الكورسات"
           trendColor="text-[#B3B3B3]"
         />
         <StatCard
-          title="Active Students"
+          title="طلاب نشيطين"
           value={activeStudents || 0}
           icon="⚡"
-          trend="Last 7 days"
-          trendColor="text-blue-400"
+          trend="آخر 7 أيام"
+          trendColor="text-primary"
         />
       </div>
 
@@ -119,7 +128,7 @@ export default async function AdminDashboard() {
         {/* Recent Enrollments */}
         <div className="bg-theme-card rounded-xl p-6 shadow-xl border border-[var(--border-color)]">
           <h2 className="text-2xl font-bold text-theme-primary mb-4">
-            Recent Enrollments
+            آخر الاشتراكات
           </h2>
           <div className="space-y-3">
             {recentEnrollments && recentEnrollments.length > 0 ? (
@@ -143,7 +152,7 @@ export default async function AdminDashboard() {
               ))
             ) : (
               <p className="text-theme-secondary text-center py-8">
-                No enrollments yet
+                لا يوجد اشتراكات بعد
               </p>
             )}
           </div>
@@ -152,7 +161,7 @@ export default async function AdminDashboard() {
         {/* Top Courses */}
         <div className="bg-theme-card rounded-xl p-6 shadow-xl border border-[var(--border-color)]">
           <h2 className="text-2xl font-bold text-theme-primary mb-4">
-            Top Courses by Enrollment
+            أكثر الكورسات اشتراكًا
           </h2>
           <div className="space-y-3">
             {topCoursesWithTitles.length > 0 ? (
@@ -170,13 +179,13 @@ export default async function AdminDashboard() {
                     </p>
                   </div>
                   <span className="text-primary font-bold text-lg">
-                    {course.count} students
+                    {course.count} طالب
                   </span>
                 </div>
               ))
             ) : (
               <p className="text-theme-secondary text-center py-8">
-                No course data yet
+                لا توجد بيانات بعد
               </p>
             )}
           </div>
@@ -187,21 +196,21 @@ export default async function AdminDashboard() {
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <QuickAction
           href="/admin/courses/new"
-          title="Create New Course"
+          title="إنشاء كورس جديد"
           icon="➕"
-          description="Add a new course to the platform"
+          description="أضف كورسًا جديدًا للمنصة"
         />
         <QuickAction
           href="/admin/codes"
-          title="Generate Access Code"
+          title="توليد كود دخول"
           icon="🎟️"
-          description="Create codes for course enrollment"
+          description="أنشئ أكوادًا للتسجيل في الكورسات"
         />
         <QuickAction
           href="/admin/students"
-          title="View All Students"
+          title="عرض كل الطلاب"
           icon="👥"
-          description="Manage student accounts and progress"
+          description="إدارة حسابات الطلاب وتقدمهم"
         />
       </div>
     </div>

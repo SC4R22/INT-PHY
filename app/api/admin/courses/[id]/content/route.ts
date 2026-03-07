@@ -207,12 +207,13 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Add Exam Question Item (image + answer) ──
+  // ── Add Exam Question Item (image or text + answer) ──
   if (action === 'addExamQuestion') {
-    const { examId, imageUrl, correct, orderIndex } = body
-    const { error } = await admin.from('exam_question_items').insert({
-      exam_id: examId, image_url: imageUrl, correct, order_index: orderIndex,
-    })
+    const { examId, imageUrl, questionText, correct, orderIndex } = body
+    const payload: any = { exam_id: examId, correct, order_index: orderIndex }
+    if (imageUrl) payload.image_url = imageUrl
+    if (questionText) payload.question_text = questionText
+    const { error } = await admin.from('exam_question_items').insert(payload)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }

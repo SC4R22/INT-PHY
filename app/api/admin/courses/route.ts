@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const user = await verifyAdminOrTeacher()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { title, description, price_cash, is_free, published } = await req.json()
+  const { title, description, price_cash, is_free, published, target_grade } = await req.json()
 
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
   if (!description?.trim()) return NextResponse.json({ error: 'Description is required' }, { status: 400 })
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       is_free: !!is_free,
       published: !!published,
       teacher_id: user.id,
+      target_grade: target_grade || null,
     })
     .select()
     .single()
