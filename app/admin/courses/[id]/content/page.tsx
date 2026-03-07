@@ -573,7 +573,7 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                       <span className="text-yellow-500 font-bold text-sm w-6 flex-shrink-0">Q{qi + 1}</span>
                       <div className="relative w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-color)] bg-[var(--bg-input)]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.image_url} alt={`Q${qi + 1}`} className="w-full h-full object-cover" />
+                        <img src={item.image_url!} alt={`Q${qi + 1}`} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="px-3 py-1 bg-green-600/20 text-green-400 text-sm font-black rounded-full border border-green-600/30 uppercase">
