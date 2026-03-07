@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 export default function NewCoursePage() {
@@ -139,7 +140,7 @@ export default function NewCoursePage() {
           >
             {thumbnailPreview ? (
               <>
-                <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                <Image src={thumbnailPreview} alt="Thumbnail preview" fill className="object-cover" unoptimized />
                 <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="text-white font-bold text-sm">اضغط للتغيير</span>
                 </div>

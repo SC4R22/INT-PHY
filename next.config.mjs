@@ -54,7 +54,12 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '4mb',
-      allowedOrigins: ['localhost:3000', '127.0.0.1:3000', 'int-phy.vercel.app'],
+      allowedOrigins: [
+        'localhost:3000',
+        '127.0.0.1:3000',
+        'int-phy.vercel.app',
+        '*.vercel.app',
+      ],
     },
   },
 }

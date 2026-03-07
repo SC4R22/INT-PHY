@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
-import { Cairo, Tajawal } from 'next/font/google'
+import { Cairo, Tajawal, Rakkas } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from 'sonner'
-import Script from 'next/script'
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -16,6 +15,13 @@ const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
   weight: ['400', '700'],
   variable: '--font-tajawal',
+  display: 'swap',
+})
+
+const rakkas = Rakkas({
+  subsets: ['arabic', 'latin'],
+  weight: ['400'],
+  variable: '--font-rakkas',
   display: 'swap',
 })
 
@@ -75,11 +81,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head suppressHydrationWarning>
         <script suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Rakkas&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${cairo.variable} ${tajawal.variable} antialiased`}>
+      <body className={`${cairo.variable} ${tajawal.variable} ${rakkas.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange={false}>
           {children}
           <Toaster
