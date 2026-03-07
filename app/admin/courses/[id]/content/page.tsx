@@ -571,17 +571,26 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                   {mod.exam.exam_question_items.map((item, qi) => (
                     <div key={item.id} className="flex items-center gap-4 px-4 md:px-6 py-4 hover:bg-[var(--bg-card-alt)] transition-colors">
                       <span className="text-yellow-500 font-bold text-sm w-6 flex-shrink-0">Q{qi + 1}</span>
-                      <div className="relative w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-color)] bg-[var(--bg-input)]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.image_url!} alt={`Q${qi + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
+                      {item.image_url ? (
+                        <div className="relative w-32 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-color)] bg-[var(--bg-input)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.image_url} alt={`Q${qi + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="flex-1 min-w-0 bg-[var(--bg-input)] rounded-lg border border-[var(--border-color)] px-4 py-3">
+                          <p className="text-theme-primary text-sm font-semibold line-clamp-2">{item.question_text}</p>
+                          <span className="text-xs text-theme-muted mt-1 inline-block">📝 سؤال نصي</span>
+                        </div>
+                      )}
+                      <div className="flex-shrink-0">
                         <span className="px-3 py-1 bg-green-600/20 text-green-400 text-sm font-black rounded-full border border-green-600/30 uppercase">
                           Answer: {item.correct}
                         </span>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-theme-secondary hover:text-theme-primary text-xs transition-colors">عرض</a>
+                        {item.image_url && (
+                          <a href={item.image_url} target="_blank" rel="noopener noreferrer" className="text-theme-secondary hover:text-theme-primary text-xs transition-colors">عرض</a>
+                        )}
                         <button suppressHydrationWarning onClick={() => deleteExamQuestion(item.id)} className="text-red-400 hover:text-red-300 text-xs font-semibold">حذف</button>
                       </div>
                     </div>
