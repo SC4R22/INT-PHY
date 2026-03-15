@@ -139,6 +139,10 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, containerId])
 
+  const stopTicker = useCallback(() => {
+    if (tickerRef.current) { clearInterval(tickerRef.current); tickerRef.current = null }
+  }, [])
+
   const startTicker = useCallback(() => {
     stopTicker()
     tickerRef.current = setInterval(() => {
@@ -150,11 +154,7 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
       setDuration(dur)
       onTimeUpdate?.(ct, dur)
     }, 500)
-  }, [onTimeUpdate])
-
-  const stopTicker = useCallback(() => {
-    if (tickerRef.current) { clearInterval(tickerRef.current); tickerRef.current = null }
-  }, [])
+  }, [onTimeUpdate, stopTicker])
 
   useEffect(() => {
     const onFS = () => setIsFullscreen(!!document.fullscreenElement)
