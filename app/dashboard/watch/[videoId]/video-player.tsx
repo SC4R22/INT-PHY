@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CustomVideoPlayer } from '@/components/CustomVideoPlayer'
+import { YouTubePlayer } from '@/components/YouTubePlayer'
 
 interface Props {
   videoId: string
@@ -27,10 +28,6 @@ function getYouTubeId(url: string): string | null {
   return null
 }
 
-function buildYouTubeEmbedUrl(id: string): string {
-  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&enablejsapi=1`
-}
-
 export function VideoPlayer({
   videoId,
   videoUrl,
@@ -44,13 +41,11 @@ export function VideoPlayer({
 }: Props) {
   const router = useRouter()
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const autoCompletedRef = useRef(false) // prevent firing auto-complete multiple times
-  const userIdRef = useRef<string | null>(null) // cache user id — avoid repeated getUser() calls
+  const userIdRef = useRef<string | null>(null)
   const [completed, setCompleted] = useState(isCompleted)
   const [saving, setSaving] = useState(false)
   const [justToggled, setJustToggled] = useState<'marked' | 'unmarked' | null>(null)
 
-  // Fetch user id once on mount
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
@@ -88,24 +83,15 @@ export function VideoPlayer({
     if (!userId) return
     setSaving(true)
     const supabase = createClient()
-
     await supabase.from('user_progress').upsert(
-      {
-        user_id: userId,
-        video_id: videoId,
-        last_position: Math.floor(position),
-        completed: done,
-        last_watched_at: new Date().toISOString(),
-      },
+      { user_id: userId, video_id: videoId, last_position: Math.floor(position), completed: done, last_watched_at: new Date().toISOString() },
       { onConflict: 'user_id,video_id' }
     )
     setSaving(false)
     router.refresh()
   }, [videoId, router])
 
-  // ── Auto-complete on ended only (or manual toggle) ──────────────────────
   const handleTimeUpdate = useCallback((currentTime: number, duration?: number) => {
-    // Periodic save every 10s (no auto-complete on time update anymore)
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => saveProgress(currentTime, completed), 10_000)
   }, [completed, saveProgress])
@@ -113,7 +99,6 @@ export function VideoPlayer({
   const handleEnded = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     if (!completed) {
-      autoCompletedRef.current = true
       setCompleted(true)
       setJustToggled('marked')
       setTimeout(() => setJustToggled(null), 3000)
@@ -126,11 +111,9 @@ export function VideoPlayer({
     saveProgress(currentTime, completed)
   }, [completed, saveProgress])
 
-  // ── Toggle complete / uncomplete ──────────────────────────────────────────
   const handleToggleComplete = useCallback(() => {
     const newState = !completed
     setCompleted(newState)
-    autoCompletedRef.current = newState // if manually unmarked, allow auto-complete again on next watch
     setJustToggled(newState ? 'marked' : 'unmarked')
     saveProgress(0, newState)
     setTimeout(() => setJustToggled(null), 3000)
@@ -145,7 +128,7 @@ export function VideoPlayer({
   const currentIdx = allVideos.findIndex((v: any) => v.id === videoId)
   const nextVideo = currentIdx >= 0 ? allVideos[currentIdx + 1] : null
 
-  // ── Determine source ──────────────────────────────────────────────────────
+  // ── Determine source type ─────────────────────────────────────────────────
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null
   const muxSrc = muxPlaybackId && muxToken
     ? muxToken === '__unsigned__'
@@ -153,7 +136,6 @@ export function VideoPlayer({
       : `https://stream.mux.com/${muxPlaybackId}.m3u8?token=${muxToken}`
     : null
   const nativeSrc = !muxPlaybackId && !youtubeId ? videoUrl : null
-  const videoSrc = muxSrc ?? nativeSrc
 
   return (
     <div className="flex flex-col flex-1">
@@ -180,26 +162,23 @@ export function VideoPlayer({
             onPause={handlePause}
           />
         )
-      ) : videoSrc ? (
+      ) : youtubeId ? (
+        <YouTubePlayer
+          videoId={youtubeId}
+          title={videoTitle}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
+          onPause={handlePause}
+        />
+      ) : nativeSrc ? (
         <CustomVideoPlayer
-          src={videoSrc}
+          src={nativeSrc}
           title={videoTitle}
           startTime={initialPosition}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
           onPause={handlePause}
         />
-      ) : youtubeId ? (
-        <div className="relative bg-black w-full" style={{ aspectRatio: '16/9' }}>
-          <iframe
-            key={youtubeId}
-            src={buildYouTubeEmbedUrl(youtubeId)}
-            title={videoTitle}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="w-full h-full border-0"
-          />
-        </div>
       ) : (
         <div className="relative bg-black w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
           <div className="text-center text-theme-secondary">
@@ -215,15 +194,9 @@ export function VideoPlayer({
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-theme-primary">{videoTitle}</h1>
             {saving && <p className="text-xs text-theme-muted mt-1 animate-pulse">جاري حفظ التقدم...</p>}
-            {justToggled === 'marked' && (
-              <p className="text-xs text-green-400 mt-1 font-semibold animate-pulse">✓ تم التسجيل كمكتمل!</p>
-            )}
-            {justToggled === 'unmarked' && (
-              <p className="text-xs text-yellow-400 mt-1 font-semibold animate-pulse">↩ تم التسجيل كغير مكتمل</p>
-            )}
+            {justToggled === 'marked' && <p className="text-xs text-green-400 mt-1 font-semibold animate-pulse">✓ تم التسجيل كمكتمل!</p>}
+            {justToggled === 'unmarked' && <p className="text-xs text-yellow-400 mt-1 font-semibold animate-pulse">↩ تم التسجيل كغير مكتمل</p>}
           </div>
-
-          {/* Toggle button — always visible, switches between complete/uncomplete */}
           <button
             onClick={handleToggleComplete}
             disabled={saving}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
@@ -18,6 +19,7 @@ const roleColor: Record<string, string> = {
 }
 
 export default function UsersPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -128,7 +130,7 @@ export default function UsersPage() {
 
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl md:text-4xl font-black text-theme-primary uppercase italic font-payback mb-2">إدارة المستخدمين</h1>
-        <p className="text-theme-secondary">كل المستخدمين بكل الأدوار</p>
+        <p className="text-theme-secondary">كل المستخدمين بكل الأدوار — اضغط على أي مستخدم لعرض تفاصيله</p>
       </div>
 
       {/* Stats */}
@@ -188,7 +190,11 @@ export default function UsersPage() {
                   </td>
                 </tr>
               ) : filtered.map((user) => (
-                <tr key={user.id} className={`hover:bg-[var(--bg-card-alt)] transition-colors ${user.is_banned ? 'opacity-60' : ''}`}>
+                <tr
+                  key={user.id}
+                  onClick={() => router.push(`/admin/users/${user.id}`)}
+                  className={`hover:bg-[var(--bg-card-alt)] transition-colors cursor-pointer ${user.is_banned ? 'opacity-60' : ''}`}
+                >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
@@ -212,7 +218,7 @@ export default function UsersPage() {
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => handleBan(user.id, !user.is_banned, user.full_name)}
                         disabled={actionLoading === user.id + '-ban'}

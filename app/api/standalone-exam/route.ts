@@ -2,24 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// GET /api/exam?examId=xxx[&getQuestions=1]
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const examId = req.nextUrl.searchParams.get('examId')
-  const getQuestions = req.nextUrl.searchParams.get('getQuestions') === '1'
   if (!examId) return NextResponse.json({ error: 'Missing examId' }, { status: 400 })
 
   const admin = createAdminClient()
-
+  const getQuestions = req.nextUrl.searchParams.get('getQuestions') === '1'
   const getCorrect = req.nextUrl.searchParams.get('getCorrect') === '1'
 
-  // Return correct answers + solutions only if the user has already submitted
   if (getCorrect) {
     const { data: sub } = await admin
-      .from('module_exam_submissions')
+      .from('standalone_exam_submissions')
       .select('exam_id')
       .eq('user_id', user.id)
       .eq('exam_id', examId)
@@ -27,9 +24,10 @@ export async function GET(req: NextRequest) {
     if (!sub) return NextResponse.json({ error: 'No submission found' }, { status: 403 })
 
     const { data: questions } = await admin
-      .from('exam_question_items')
+      .from('standalone_exam_questions')
       .select('id, correct, solution')
       .eq('exam_id', examId)
+
     const correct: Record<string, string> = {}
     const solutions: Record<string, string | null> = {}
     for (const q of questions ?? []) {
@@ -41,31 +39,32 @@ export async function GET(req: NextRequest) {
 
   if (getQuestions) {
     const { data: exam, error: eErr } = await admin
-      .from('module_exams').select('id, title, module_id').eq('id', examId).single()
+      .from('standalone_exams')
+      .select('id, title, description')
+      .eq('id', examId)
+      .eq('published', true)
+      .single()
     if (eErr || !exam) return NextResponse.json({ error: 'Exam not found' }, { status: 404 })
 
     const { data: questions } = await admin
-      .from('exam_question_items')
+      .from('standalone_exam_questions')
       .select('id, order_index, image_url, question_text, option_a, option_b, option_c, option_d')
-      // deliberately exclude "correct" and "solution"
       .eq('exam_id', examId)
       .order('order_index')
 
     return NextResponse.json({ exam, questions: questions ?? [] })
   }
 
-  // Return existing submission only
-  const { data } = await admin
-    .from('module_exam_submissions')
+  const { data: sub } = await admin
+    .from('standalone_exam_submissions')
     .select('exam_id, score, total, answers')
     .eq('user_id', user.id)
     .eq('exam_id', examId)
     .maybeSingle()
 
-  return NextResponse.json({ submission: data })
+  return NextResponse.json({ submission: sub })
 }
 
-// POST /api/exam — submit an exam attempt
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -76,9 +75,10 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Get correct answers + solutions (server-side only)
   const { data: questions, error: qErr } = await admin
-    .from('exam_question_items').select('id, correct, solution').eq('exam_id', examId)
+    .from('standalone_exam_questions')
+    .select('id, correct, solution')
+    .eq('exam_id', examId)
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 })
 
   const total = questions?.length ?? 0
@@ -92,13 +92,12 @@ export async function POST(req: NextRequest) {
     if (answers[q.id] === q.correct) score++
   }
 
-  const { error: subErr } = await admin.from('module_exam_submissions').upsert({
+  const { error: subErr } = await admin.from('standalone_exam_submissions').upsert({
     user_id: user.id, exam_id: examId, answers, score, total,
     submitted_at: new Date().toISOString(),
   }, { onConflict: 'user_id,exam_id' })
 
   if (subErr) return NextResponse.json({ error: subErr.message }, { status: 500 })
 
-  // Return score + correct map + solutions
   return NextResponse.json({ score, total, correct, solutions })
 }

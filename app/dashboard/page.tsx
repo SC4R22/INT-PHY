@@ -234,7 +234,8 @@ export default async function DashboardPage() {
 
       <main className="max-w-7xl mx-auto p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Continue Watching */}
+
+          {/* ── Continue Watching (untouched) ── */}
           {continueWatching ? (() => {
             const vid = continueWatching.videos as any
             const mod = vid?.modules as any
@@ -284,16 +285,65 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* Get New Courses */}
-          <Link href="/courses"
-            className="group bg-theme-card rounded-2xl border-2 border-primary hover:border-primary/80 transition-all hover:scale-[1.02] min-h-[280px] flex flex-col items-center justify-center gap-6 p-8">
-            <h3 className="text-4xl md:text-5xl font-payback font-black text-theme-primary text-center uppercase italic leading-tight">
-              اشترك<br />في كورس جديد
-            </h3>
-            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-6xl font-bold text-white leading-none">+</span>
+          {/* ── Quick Actions Card (replaces old "Get New Courses") ── */}
+          <div className="bg-theme-card rounded-2xl border-2 border-[var(--border-color)] min-h-[280px] flex flex-col gap-4 p-5">
+
+            {/* Top: Get New Courses — full width */}
+            <Link href="/courses"
+              className="group flex-1 flex items-center justify-between gap-4 rounded-xl border-2 border-primary px-6 py-4 hover:bg-primary/5 transition-all hover:scale-[1.02]">
+              <span className="text-xl font-payback font-black text-theme-primary uppercase">
+                اشترك في كورس جديد
+              </span>
+              {/* Laptop / e-learning icon */}
+              <svg className="w-14 h-14 text-primary flex-shrink-0" viewBox="0 0 256 256" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
+                {/* Screen */}
+                <rect x="28" y="60" width="200" height="130" rx="12" />
+                {/* Base */}
+                <line x1="8" y1="196" x2="248" y2="196" />
+                <path d="M96 196 Q128 216 160 196" />
+                {/* Play triangle */}
+                <polygon points="100,100 100,160 165,130" fill="currentColor" stroke="none" />
+                {/* Grad cap */}
+                <polygon points="128,38 168,52 128,66 88,52" fill="currentColor" stroke="none" />
+                <line x1="168" y1="52" x2="168" y2="72" strokeWidth="10" />
+              </svg>
+            </Link>
+
+            {/* Bottom row: two equal buttons */}
+            <div className="flex gap-4">
+
+              {/* تسليم الواجبات */}
+              <Link href="/dashboard/assignments"
+                className="group flex-1 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-primary px-4 py-5 hover:bg-primary/5 transition-all hover:scale-[1.02]">
+                {/* Submit-document icon */}
+                <svg className="w-10 h-10 text-primary" viewBox="0 0 128 128" fill="currentColor">
+                  <path d="M20 10 Q14 10 14 16 L14 112 Q14 118 20 118 L80 118 Q86 118 86 112 L86 36 L60 10 Z" opacity="0.85"/>
+                  <path d="M60 10 L60 36 L86 36 Z" opacity="0.6"/>
+                  <rect x="26" y="54" width="44" height="6" rx="3" fill="white"/>
+                  <rect x="26" y="68" width="44" height="6" rx="3" fill="white"/>
+                  <rect x="26" y="82" width="44" height="6" rx="3" fill="white"/>
+                  <rect x="26" y="96" width="30" height="6" rx="3" fill="white"/>
+                  {/* Arrow pointing right */}
+                  <rect x="88" y="42" width="26" height="14" rx="7" fill="currentColor"/>
+                  <polygon points="110,36 124,49 110,62" fill="currentColor"/>
+                </svg>
+                <span className="text-sm font-bold text-theme-primary text-center leading-tight">تسليم الواجبات</span>
+              </Link>
+
+              {/* الامتحانات */}
+              <Link href="/dashboard/exams"
+                className="group flex-1 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-primary px-4 py-5 hover:bg-primary/5 transition-all hover:scale-[1.02]">
+                {/* Arrow-in-circle icon */}
+                <svg className="w-10 h-10 text-primary" viewBox="0 0 128 128" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="64" cy="64" r="54"/>
+                  <line x1="34" y1="64" x2="88" y2="64"/>
+                  <polyline points="68,44 88,64 68,84"/>
+                </svg>
+                <span className="text-sm font-bold text-theme-primary text-center leading-tight">الامتحانات</span>
+              </Link>
+
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* Your Courses Section */}

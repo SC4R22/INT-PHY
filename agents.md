@@ -1,807 +1,770 @@
-# Course Platform Development Guide
+# منصة المبدع — دليل الأعوان الكامل
+# Al-Mubdi' Platform — Complete Agent Reference
 
-## Project Overview
-A Udemy-like learning platform where one teacher uploads courses and students purchase access via admin-generated codes (cash payment system). Built with AI assistance, minimal manual coding required.
-
-## Tech Stack
-- **Frontend Framework**: Next.js 14+ (App Router)
-- **Authentication**: Supabase Auth
-- **Database**: Supabase (PostgreSQL)
-- **Video Storage**: Cloudflare R2
-- **Styling**: Tailwind CSS
-- **Fonts**: Payback (headers), Inter (body text)
-
-## Design System
-### Dark Mode (Default)
-- Background: `#25292D`
-- Body Text: `#EFEFEF`
-- Header Text: `#B3B3B3`
-- Primary: `#6A0DAD`
-
-### Light Mode
-- Background: `#FFFFFF` / `#F5F5F5`
-- Body Text: `#1A1A1A`
-- Header Text: `#333333`
-- Primary: `#6A0DAD`
+> **للعامل الجديد:** اقرأ هذا الملف بالكامل قبل لمس أي كود. يصف الحالة الفعلية للمنصة كما هي الآن.
+> **For new agents:** Read this entire file before touching any code. Describes the actual current state.
 
 ---
 
-## ✅ CURRENT STATUS (as of Phase 3 completion)
+## 1. نظرة عامة على المشروع / Project Overview
 
-### What Is Built & Working
-- Next.js 14 project with TypeScript, Tailwind, dark mode class setup
-- Supabase auth (phone-number → email conversion pattern)
-- Database schema: `user_profiles`, `courses`, `modules`, `videos`, `enrollments`, `access_codes`
-- Login & Signup pages (`/login`, `/signup`) — phone-based auth
-- Landing page (`/`) — hero, features, course preview, centers, CTA, about
-- Courses listing page (`/courses`) — with search/filter
-- Course detail page (`/courses/[id]`) — curriculum display, enroll button
-- Enroll button with access code redemption modal
-- Basic student dashboard (`/dashboard`) — enrolled courses list
-- Admin panel (`/admin`) — built early for content testing:
-  - `/admin/courses` — list, create, edit, publish/draft toggle
-  - `/admin/courses/[id]/content` — modules & videos management
-  - `/admin/codes` — generate & manage access codes
-  - `/admin/students` — student list
-  - `/admin/users` — all users by role
+منصة تعليم إلكتروني عربية للأستاذ أحمد بدوي (مدرس لغة عربية). الطلاب يشترون أكواد وصول نقدًا ثم يستخدمونها للتسجيل في الكورسات.
 
-### Known Bugs (To Be Fixed in Phase 4)
-1. 🔴 `app/layout.tsx` — `ThemeProvider` from `next-themes` is never mounted; theme toggle is broken
-2. 🔴 `app/layout.tsx` — `ConditionalLayout` component exists but is never used; no page gets header/footer
-3. 🔴 `enroll-button.tsx` — Free courses still show the access code modal instead of auto-enrolling
-4. 🔴 `admin/codes/page.tsx` — Course filter references `c.course_id` which doesn't exist on the returned object; filter is broken
-5. 🔴 `enroll-button.tsx` — Code redemption is two separate queries with a race condition; should use the `redeem_access_code` RPC already defined in `lib/auth.ts`
-6. 🟠 `lib/supabase/middleware.ts` — `/admin` routes have no middleware-level protection
-7. 🟠 `lib/roles.ts` — `getRoleBasedRedirect` returns `/admin/dashboard` for admin (doesn't exist, should be `/admin`)
-8. 🟠 Three admin client pages — `createClient()` called directly in component body, creates new client every render
-9. 🟠 `content/page.tsx` — `supabase` used inside `useCallback` without being in its dependency array
-10. 🟡 `signup/page.tsx` — `console.log` calls expose user email format in production
-11. 🟡 `admin/page.tsx` — Trend stats (`"+12% this month"`) are hardcoded strings, not real data
-12. 🟡 `admin/page.tsx` — Queries `last_activity_at` column which likely doesn't exist in schema
-13. 🟡 `admin/page.tsx` — Queries `course_analytics` view which may not exist in Supabase
-14. 🟡 `dashboard/page.tsx` — "Continue Learning" links to public course page, not the video player
-15. 🟡 `dashboard/page.tsx` — Teacher role renders a blank screen (no content for teacher)
-16. 🟡 `debug/page.tsx` — Publicly accessible, exposes raw profile data, no auth gate
-17. 🟡 `api/auth/signout/route.ts` — Hardcoded `localhost:3000` fallback breaks production logout
-18. 🟡 `app/actions/auth.ts` — Nested `'use server'` directive inside `refreshSession`
-19. 🟡 `lib/supabase/.env.local` — Stray env file inside lib directory, should only be at project root
+Arabic e-learning platform for teacher Ahmed Badawi. Students purchase access codes in cash then use them to enroll in courses.
 
-### What Is NOT Yet Built
-- Student course view page with sidebar (`/dashboard/courses/[id]`)
-- Video player page (`/dashboard/watch/[videoId]`)
-- Cloudflare R2 signed URL API route for video playback
-- Video progress tracking (save position, resume, mark complete)
-- Loading skeletons / toast notifications
-- SEO metadata on all pages
-- Custom 404 page
+**URL:** `https://int-phy.vercel.app`  
+**Supabase Project:** `vrefcmplibzoayfyfidd` (region: eu-west-1)
 
 ---
 
-## PHASE 1: Project Setup & Foundation ✅ COMPLETE
-**Goal**: Initialize project with proper structure, configuration, and basic navigation
+## 2. Tech Stack
 
-### Tasks
-1. **Initialize Next.js Project**
-   - Create new Next.js 14+ project with TypeScript
-   - Configure `next.config.js` for video optimization
-   - Setup `app` directory structure
-
-2. **Install & Configure Dependencies**
-   ```bash
-   # Core dependencies
-   - @supabase/supabase-js
-   - @supabase/auth-helpers-nextjs
-   - tailwindcss
-   - @headlessui/react (for UI components)
-   - lucide-react (icons)
-   - next-themes (dark/light mode)
-   ```
-
-3. **Setup Tailwind with Design System**
-   - Configure `tailwind.config.js` with custom colors
-   - Add Payback and Inter fonts via `next/font`
-   - Create base CSS with design tokens
-   - Setup dark/light mode toggle
-
-4. **Initialize Supabase**
-   - Create Supabase project
-   - Setup environment variables (.env.local)
-   - Create Supabase client utilities
-   - Configure auth helpers for Next.js
-
-5. **Create Base Layout & Navigation**
-   - Root layout with theme provider
-   - Basic navigation component (header/footer)
-   - Theme toggle component
-   - Responsive design foundation
-
-6. **Setup Cloudflare R2 Configuration**
-   - Document R2 bucket setup
-   - Create environment variables for R2
-   - Setup signed URL generation utility (placeholder)
-
-### Deliverables
-- Fully configured Next.js project
-- Working theme toggle (dark/light)
-- Basic navigation structure
-- Supabase connection established
-- All dependencies installed and configured
-
-### Best Practices & References
-- **Next.js App Router**: https://nextjs.org/docs/app/building-your-application/routing
-- **Supabase Auth Helpers**: https://supabase.com/docs/guides/auth/auth-helpers/nextjs
-- **Tailwind Custom Colors**: https://tailwindcss.com/docs/customizing-colors
-- **next-themes Setup**: https://github.com/pacocoursey/next-themes
-
-### AI Prompt Template for Phase 1
-```
-I'm building a course platform with Next.js 14, Supabase, and Tailwind. 
-
-Tech Stack:
-- Next.js 14 (App Router, TypeScript)
-- Supabase (Auth + Database)
-- Cloudflare R2 (video storage)
-- Tailwind CSS
-
-Design System:
-- Dark Mode: Background #25292D, Body #EFEFEF, Headers #B3B3B3, Primary #6A0DAD
-- Light Mode: Background #FFFFFF, Body #1A1A1A, Headers #333333, Primary #6A0DAD
-- Fonts: Payback (headers), Inter (body)
-
-Please follow Next.js 14 App Router best practices and Supabase auth helper patterns.
-
-Please help me:
-1. Initialize the Next.js project with proper structure
-2. Configure Tailwind with the design system
-3. Setup Supabase auth helpers
-4. Create a base layout with theme toggle
-5. Setup basic navigation
-
-Reference the Figma design: [attach Figma file]
-```
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 (App Router, TypeScript) |
+| Auth + DB | Supabase (PostgreSQL + RLS) |
+| Video | YouTube embed (custom player, no branding) + Mux (paid uploads) |
+| Storage | Supabase Storage (`exam-images`, `module-files`, `course-thumbnails`) |
+| Styling | Tailwind CSS + CSS variables (dark/light mode) |
+| Fonts | Cairo, Tajawal, Rakkas (Arabic), custom `font-payback` for headers |
+| Direction | RTL throughout |
+| Mobile App | Expo (React Native) — admin management app |
+| Deployment | Vercel (website), Expo Go / standalone APK (app) |
 
 ---
 
-## PHASE 2: Authentication System & Database Schema ✅ COMPLETE
-**Goal**: Complete authentication flow and setup database structure
-**Token Estimate**: ~40k tokens
+## 3. الحالة الحالية للمشروع / Current Project State
 
-### Tasks
-1. **Design Database Schema**
-   - `users` table (profiles)
-   - `courses` table
-   - `modules` table (course sections)
-   - `videos` table (module videos)
-   - `enrollments` table (student-course relationships)
-   - `access_codes` table (for cash payment system)
-   - `user_progress` table (video completion tracking)
+### ✅ مبني وشغال / Built and Working
 
-2. **Create Supabase Tables & RLS Policies**
-   - Setup all tables with proper relationships
-   - Configure Row Level Security (RLS)
-   - Create database functions for common operations
-   - Setup triggers for automated tasks
+**Authentication**
+- Phone-number → email conversion (`01012345678` → `01012345678@intphy.app`)
+- Sign up with grade, parent info, role defaults to `student`
+- Roles: `student`, `teacher`, `admin`
+- Ban system: banned users are signed out immediately at dashboard layout level
 
-3. **Build Authentication Pages**
-   - `/signup` - Registration page
-   - `/login` - Login page
-   - Email/password authentication
-   - Form validation
-   - Error handling
-   - Protected route middleware
+**Public Pages**
+- `/` — Landing page
+- `/courses` — Course listing with search, grade filtering, **enrolled courses hidden from student view**
+- `/courses/[id]` — Course detail with access code redemption modal
+- `/about` — About page
 
-4. **User Role System**
-   - Implement role field (student/teacher/admin)
-   - Create role-based middleware
-   - Setup role checking utilities
+**Student Dashboard (`/dashboard`)**
+- Continue watching widget (last watched/incomplete video)
+- Course progress cards with % completion
+- Quick links: تسليم الواجبات (`/dashboard/assignments`), الامتحانات (`/dashboard/exams`)
+- Completed courses section (green border)
+- Expired/deleted courses section (locked)
 
-5. **Access Code System Backend**
-   - Create access code generation function
-   - Code validation logic
-   - Code redemption workflow
-   - Link codes to specific courses
+**Student Learning**
+- `/dashboard/courses/[id]` — Course page with module/video list
+- `/dashboard/watch/[videoId]` — Video player (YouTube custom embed or Mux)
+  - Progress saved to `user_progress` (last position, completion)
+  - Quiz inline during video (collapsible)
+- `/dashboard/quiz/[quizId]` — Standalone quiz page with review mode
+- `/dashboard/exam/[examId]` — Exam page with `?type=homework` param for homework mode
+- `/dashboard/standalone-exam/[examId]` — Standalone (non-course) exam page
+- `/dashboard/assignments` — Lists homework modules from enrolled courses
+- `/dashboard/exams` — Lists published standalone exams (all students)
 
-### Deliverables
-- Complete database schema in Supabase
-- All RLS policies configured
-- Working signup/login flow
-- Role-based access control
-- Access code generation system ready
+**Admin Panel (`/admin`)**
+- Protected: only `admin` or `teacher` role
+- `/admin` — Dashboard with stats (students, courses, enrollments, active last 7d)
+- `/admin/courses` — Course list
+- `/admin/courses/new` — Create course
+- `/admin/courses/[id]/edit` — Edit course details, thumbnail
+- `/admin/courses/[id]/content` — Manage modules:
+  - **Lesson modules**: videos (YouTube/URL/Mux) + files + quizzes
+  - **Exam modules**: MCQ questions (image or text) with solution keys
+  - **Homework modules**: same as exam, shown in `/dashboard/assignments`
+- `/admin/courses/[id]/stats` — Course analytics (enrollment, video views, quiz/exam scores)
+- `/admin/codes` — Generate, filter, mark, share, delete access codes
+- `/admin/students` — Student list with enrollment data
+- `/admin/users` — All users, ban/unban, delete, password reset via Edge Function
+- `/admin/standalone-exams` — Create/publish/manage standalone exams with questions
 
-### Best Practices & References
-- **Supabase RLS**: https://supabase.com/docs/guides/auth/row-level-security
-- **Database Schema Design**: https://supabase.com/docs/guides/database/tables
-- **Auth UI Components**: https://supabase.com/docs/guides/auth/auth-helpers/auth-ui
+**Expo Mobile App (`C:\Users\yusuf\Desktop\management`)**
+- Tabs: 📚 كورسات / 🎓 طلاب / 📋 امتحانات / 🎟️ أكواد / ⚙️ مستخدمين
+- Full admin capabilities: manage courses, view student profiles, generate codes, reset passwords
+- Quiz/exam rankings per item (sorted by score, medal system)
+- Standalone exam stats
+- Tapping a student → `UserDetailScreen` (full profile, courses, quizzes, exams)
 
-### Database Schema Reference
-```sql
--- Tables to create:
-users_profile (user_id, role, full_name, avatar_url)
-courses (id, title, description, thumbnail_url, teacher_id, price_cash)
-modules (id, course_id, title, order)
-videos (id, module_id, title, video_url, duration, order)
-enrollments (id, user_id, course_id, enrolled_at)
-access_codes (id, code, course_id, is_used, created_by, created_at)
-user_progress (user_id, video_id, completed, last_position)
+---
+
+## 4. Database Schema (Current — All Tables)
+
+```
+user_profiles          id, full_name, parent_name, phone_number, parent_phone_number,
+                       role (student/teacher/admin), grade, is_banned, email, created_at
+
+courses                id, title, description, thumbnail_url, teacher_id, price_cash,
+                       is_free, published, target_grade, created_at, deleted_at
+
+modules                id, course_id, title, order_index,
+                       module_type (lesson/exam/homework)
+
+videos                 id, module_id, title, video_url, mux_asset_id, mux_playback_id,
+                       duration, order_index, is_preview
+
+module_files           id, module_id, name, file_url, file_size, file_type, order_index
+
+quizzes                id, module_id, title, order_index
+quiz_questions         id, quiz_id, question_text, option_a/b/c/d, correct (a/b/c/d),
+                       solution, order_index
+
+module_exams           id, module_id (unique), title
+exam_question_items    id, exam_id, image_url, question_text, option_a/b/c/d,
+                       correct, solution, order_index
+
+enrollments            id, user_id, course_id, enrolled_at, completed, progress_percentage
+
+user_progress          id, user_id, video_id, completed, last_position, last_watched_at
+
+quiz_submissions       id, user_id, quiz_id, answers (jsonb), score, total, submitted_at
+                       UNIQUE(user_id, quiz_id)
+
+module_exam_submissions id, user_id, exam_id, answers (jsonb), score, total, submitted_at
+                       UNIQUE(user_id, exam_id)
+
+access_codes           id, code, course_id, is_used, used_by, used_at, created_by,
+                       created_at, expires_at, notes, is_marked
+
+standalone_exams       id, title, description, published, created_by, created_at
+standalone_exam_questions  id, exam_id, image_url, question_text, option_a/b/c/d,
+                           correct, solution, order_index
+standalone_exam_submissions id, user_id, exam_id, answers (jsonb), score, total, submitted_at
+                            UNIQUE(user_id, exam_id)
+
+course_analytics       VIEW: course_id, total_enrollments (used by admin dashboard)
+user_bans              id, user_id, banned_by, ban_reason, banned_at, is_active
 ```
 
-### AI Prompt Template for Phase 2
+**Key Relationships:**
+- `modules` → homework/exam type → creates a `module_exams` row (shared table)
+- `module_exams` submissions use `module_exam_submissions` for BOTH exam AND homework modules
+- Homework distinction is only in `modules.module_type = 'homework'`; the exam infra is identical
+
+---
+
+## 5. API Routes
+
 ```
-Continue the course platform project.
+POST /api/auth/signout             Sign out (form action)
+GET  /api/enroll                   Check enrollment status
+POST /api/enroll                   Redeem access code + enroll
 
-I need to:
-1. Design and create the complete database schema in Supabase
-2. Setup Row Level Security policies
-3. Build signup and login pages matching the Figma design
-4. Implement role-based access (student/teacher/admin)
-5. Create the access code generation and redemption system
+GET  /api/quiz?quizId=&getQuestions=1     Fetch quiz questions (no correct answers)
+GET  /api/quiz?quizId=             Fetch existing submission
+POST /api/quiz                     Submit quiz, returns score+correct+solutions
 
-Database needs:
-- User profiles with roles
-- Courses with modules and videos
-- Enrollment tracking
-- Access codes (for cash payment)
-- Video progress tracking
+GET  /api/exam?examId=&getQuestions=1    Fetch exam questions
+GET  /api/exam?examId=             Fetch existing submission
+GET  /api/exam?examId=&getCorrect=1      Get correct answers (only if already submitted)
+POST /api/exam                     Submit exam
 
-[Attach Figma designs for auth pages]
+GET  /api/standalone-exam?examId=&getQuestions=1
+GET  /api/standalone-exam?examId=
+GET  /api/standalone-exam?examId=&getCorrect=1
+POST /api/standalone-exam
+
+GET  /api/assignments              List homework modules for enrolled courses (student)
+
+GET  /api/videos?moduleId=         List videos for a module (used by watch page)
+POST /api/videos/progress          Save video progress (last_position, completed)
+
+GET  /api/admin/courses            List all courses
+POST /api/admin/courses            Create course
+GET  /api/admin/courses/[id]/content    Fetch course + modules + videos + quizzes + exams
+POST /api/admin/courses/[id]/content    Actions: addModule, deleteModule, addVideo,
+                                        deleteVideo, addFile, deleteFile, addQuiz,
+                                        deleteQuiz, updateQuizQuestion, addExamQuestion,
+                                        updateExamQuestion, deleteExamQuestion
+POST /api/admin/courses/[id]/upload           Upload module files
+POST /api/admin/courses/[id]/upload-exam-image Upload exam question images
+POST /api/admin/courses/exam-image-upload      Shared image upload (standalone exams)
+
+GET  /api/admin/courses/[id]/stats    Course stats via Edge Function
+GET  /api/admin/codes              List access codes
+POST /api/admin/codes              Generate/delete codes
+GET  /api/admin/users              List users
+PATCH /api/admin/users/[id]        Update user (ban, role)
+DELETE /api/admin/users/[id]       Delete user
+
+GET  /api/admin/standalone-exams         List standalone exams with question counts
+POST /api/admin/standalone-exams         Create/togglePublish/delete exam
+GET  /api/admin/standalone-exams/[id]    Fetch exam + questions
+POST /api/admin/standalone-exams/[id]    addQuestion/updateQuestion/deleteQuestion
 ```
 
 ---
 
-## PHASE 3: Landing Page & Course Listing ✅ COMPLETE
-**Goal**: Build public-facing pages with course browsing
-**Token Estimate**: ~35k tokens
+## 6. Security Model
 
-### Tasks
-1. **Landing Page (`/`)**
-   - Hero section with CTA
-   - Feature highlights
-   - Course preview section (3-6 courses)
-   - Call-to-action sections
-   - Footer with links
-
-2. **Course Listing Page (`/courses`)**
-   - Grid/list view of all courses
-   - Course card components (thumbnail, title, description)
-   - Search/filter functionality (optional for phase)
-   - Pagination or infinite scroll
-   - Empty state handling
-
-3. **Course Detail Page (`/courses/[id]`)**
-   - Course overview and description
-   - Teacher information
-   - Course curriculum (modules & videos list)
-   - "Enroll" button (shows code redemption modal)
-   - Preview video (if available)
-
-4. **Access Code Redemption Modal**
-   - Input for access code
-   - Validation feedback
-   - Success/error states
-   - Auto-redirect to course after enrollment
-
-5. **Responsive Design**
-   - Mobile-first approach
-   - Tablet and desktop layouts
-   - Touch-friendly interactions
-
-### Best Practices & References
-- **Next.js Dynamic Routes**: https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes
-- **Server vs Client Components**: https://nextjs.org/docs/app/building-your-application/rendering/server-components
-- **Headless UI Components**: https://headlessui.com/
-
-### Deliverables
-- Polished landing page
-- Course browsing experience
-- Course detail pages
-- Working code redemption flow
-- Fully responsive across devices
-
-### AI Prompt Template for Phase 3
-```
-Continue the course platform. Build the public-facing pages.
-
-Pages needed:
-1. Landing page (/) - Hero, features, course preview, CTA
-2. Course listing (/courses) - Grid of all courses with search
-3. Course detail (/courses/[id]) - Full course info, curriculum, enroll button
-
-Features:
-- Access code redemption modal (student enters code to enroll)
-- Responsive design (mobile-first)
-- Empty states
-- Loading states
-
-Use the design system and match Figma designs.
-
-[Attach Figma designs for these pages]
-```
+- **RLS** on all tables. Admin client (`SUPABASE_SERVICE_ROLE_KEY`) bypasses RLS — only used server-side.
+- **User client** (anon key) enforces RLS — students can only read their own data.
+- **Admin routes** protected at layout level: `app/admin/layout.tsx` checks `role IN ('admin','teacher')`.
+- **Dashboard routes** protected at layout level: `app/dashboard/layout.tsx` checks auth + `is_banned`.
+- **Correct answers** never sent to client until after submission.
+- **Homework/exam questions**: `correct` and `solution` fields excluded from GET questions endpoint.
+- **Standalone exams**: RLS policy — students can read only `published = true` exams.
 
 ---
 
-## PHASE 4: Bug Fixes & Foundation Cleanup 🔧 NEXT UP
-**Goal**: Fix all known bugs from the review before building new features. This is a short, focused session — do not build anything new, only fix what's listed.
-**Estimated Session Size**: Small-Medium (~20k tokens of work)
+## 7. Code Patterns (Use These Exactly)
 
-### Context to Provide Claude
-```
-We're on a Next.js 14 + Supabase course platform (physics education). 
-The codebase is at INTPHY-REAL. We've finished Phase 3 and identified 19 bugs.
-Fix all bugs listed below. Do NOT build new features. 
-Use the Supabase client pattern from Critical Code Patterns section.
-```
-
-### Bug Fix Checklist (fix in this order)
-
-**Critical — Fix First**
-- [ ] **`app/layout.tsx`** — Wrap children with `ThemeProvider` from `next-themes` (attribute="class", defaultTheme="dark"). Import and mount `ConditionalLayout` around children so header/footer render on public routes.
-- [ ] **`components/conditional-layout.tsx`** — Verify the `isPublicRoute` logic is correct, ensure login/signup pages are excluded from header/footer.
-- [ ] **`app/courses/[id]/enroll-button.tsx`** — If `isFree === true` and user is logged in, skip the modal entirely and directly insert an enrollment row. Show a loading state then success state.
-- [ ] **`app/admin/codes/page.tsx`** — Fix the course filter: the `AccessCode` type and query don't return `course_id` on the object. Add `course_id` to the Supabase select query and add it to the `AccessCode` interface.
-- [ ] **`app/courses/[id]/enroll-button.tsx`** — Replace the two-step code check + update with a call to the `redeem_access_code` Supabase RPC (already defined in `lib/auth.ts`'s `redeemAccessCode`). Remove the raw access_codes queries.
-
-**Significant — Fix Second**
-- [ ] **`lib/supabase/middleware.ts`** — Add `/admin` to protected routes alongside `/dashboard`. Admin routes must redirect to `/login` if no user.
-- [ ] **`lib/roles.ts`** — Fix `getRoleBasedRedirect`: change `'/admin/dashboard'` to `'/admin'`.
-- [ ] **`app/admin/codes/page.tsx`**, **`app/admin/courses/[id]/content/page.tsx`**, **`app/admin/courses/[id]/edit/page.tsx`** — Move `createClient()` call inside a `useMemo` or initialize it once with `useState` to prevent a new client instance on every render.
-- [ ] **`app/admin/courses/[id]/content/page.tsx`** — Add `supabase` to the `useCallback` dependency array for `fetchData`, or move the supabase client initialization inside the callback.
-
-**Minor — Fix Last**
-- [ ] **`app/signup/page.tsx`** — Remove both `console.log` statements.
-- [ ] **`app/admin/page.tsx`** — Remove hardcoded trend strings or replace with `null`/empty. Remove or guard the `last_activity_at` query (wrap in try/catch or remove the activeStudents query if the column doesn't exist).
-- [ ] **`app/admin/page.tsx`** — Guard the `course_analytics` query: if it returns an error, log it and show 0s rather than crashing.
-- [ ] **`app/dashboard/page.tsx`** — "Continue Learning" link should go to `/dashboard/courses/${enrollment.courses?.id}` (the future course view page) — update the href now so it's correct when Phase 5 is built.
-- [ ] **`app/dashboard/page.tsx`** — Add a teacher role block showing: welcome message + link to admin panel (since admin handles course management).
-- [ ] **`app/debug/page.tsx`** — Add an admin-only check: fetch user profile and redirect to `/dashboard` if not admin.
-- [ ] **`app/api/auth/signout/route.ts`** — Replace the redirect origin with `request.nextUrl.origin` (from the `NextRequest`) instead of `process.env.NEXT_PUBLIC_APP_URL`.
-- [ ] **`app/actions/auth.ts`** — Remove the inner `'use server'` directive from inside the `refreshSession` function body.
-- [ ] **`lib/supabase/.env.local`** — Delete this file. Environment variables belong only in the project root `.env.local`.
-
-### Deliverables
-- All 19 bugs fixed and tested
-- Theme toggle working
-- Header/footer visible on public pages
-- Free course enrollment working without a code
-- Admin access code filter working
-- Code redemption using atomic RPC
-
----
-
-## PHASE 5: Student Course View & Video Player 🎬 UPCOMING
-**Goal**: Build the complete student learning experience — from enrolled courses dashboard to watching a video and saving progress.
-**Estimated Session Size**: Medium-Large (~45k tokens of work)
-
-### Context to Provide Claude
-```
-We're on a Next.js 14 + Supabase + Cloudflare R2 course platform.
-Phase 4 bugs are fixed. Now build the student learning experience.
-Students are authenticated. Enrolled courses are fetched.
-Videos are stored in Cloudflare R2, accessed via signed URLs.
-Use the Supabase client pattern from Critical Code Patterns.
-Use server components where possible, client components only where needed.
-```
-
-### Tasks
-
-**1. Upgrade Student Dashboard (`/dashboard/page.tsx`)**
-- Replace inline styles with Tailwind classes (consistent with rest of app)
-- Add "Continue Watching" section — show the last video a student was watching across all enrolled courses (query `user_progress` for most recent `updated_at` where `completed = false`)
-- Enrolled course cards should show a progress bar (% of videos completed in that course)
-- "Continue Learning" button goes to `/dashboard/courses/[id]`
-
-**2. Student Course View Page (`/dashboard/courses/[id]/page.tsx`)**
-- Server component — fetch course, modules, videos, and user's progress for this course
-- Layout: left sidebar + right content area
-- **Sidebar**: course title, modules list collapsed/expanded, each video as a clickable row showing: video title, duration, completion checkmark if done, "playing" indicator if current
-- **Main area**: when no video is selected, show course overview (description, stats, instructor note)
-- Clicking a video in the sidebar navigates to `/dashboard/watch/[videoId]`
-- Show overall course progress bar at the top of sidebar
-- Guard: redirect to `/courses/[id]` if student is not enrolled
-
-**3. R2 Signed URL API Route (`/api/videos/signed-url/route.ts`)**
-- `GET /api/videos/signed-url?videoId=[id]`
-- Server-side: verify user is authenticated and enrolled in the course this video belongs to
-- Fetch the video record from Supabase to get the `video_url` (R2 object key)
-- Generate a signed URL using `@aws-sdk/s3-request-presigner` with the R2 credentials from env
-- Return `{ signedUrl: string, expiresIn: number }`
-- Return 401 if not authenticated, 403 if not enrolled, 404 if video not found
-
+### Server Component (reads DB)
 ```typescript
-// Env vars needed (add to .env.local):
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
-R2_PUBLIC_URL=
-```
-
-**4. Video Player Page (`/dashboard/watch/[videoId]/page.tsx`)**
-- Server component wrapper: fetch video metadata, verify enrollment, get adjacent videos (prev/next)
-- Pass video ID (not the signed URL) to a client component — the client fetches the signed URL fresh
-- **Client component `<VideoPlayer />`**:
-  - On mount, call `GET /api/videos/signed-url?videoId=[id]` to get the signed URL
-  - Use a native HTML5 `<video>` element or the `plyr` library (install `plyr` and `@types/plyr`)
-  - Controls: play/pause, volume, fullscreen, playback speed (0.75x, 1x, 1.25x, 1.5x, 2x)
-  - On `timeupdate` event, debounce saving position every 5 seconds to Supabase `user_progress`
-  - On video end (or at 90% watched), mark video as `completed = true` in `user_progress`
-  - On load, seek to `last_position` from `user_progress` if it exists and `completed = false`
-  - Show loading skeleton while signed URL is fetching
-- **Below the video**: video title, module name, prev/next video navigation buttons
-- **Sidebar** (same as course view): module/video list showing progress, current video highlighted
-
-**5. Progress Tracking**
-- `user_progress` table columns needed: `user_id`, `video_id`, `completed` (bool), `last_position` (int, seconds), `updated_at`
-- Upsert on position save: `supabase.from('user_progress').upsert({ user_id, video_id, last_position, completed }, { onConflict: 'user_id,video_id' })`
-- Debounce the save call by 5 seconds using `setTimeout`/`clearTimeout`
-- On mark complete: set `completed = true`, `last_position = 0`
-
-### API Routes Needed
-```
-GET  /api/videos/signed-url?videoId=[id]   → returns signed R2 URL
-```
-
-### Dependencies to Install
-```bash
-npm install plyr
-npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-```
-
-### Deliverables
-- Upgraded dashboard with progress bars and continue-watching
-- `/dashboard/courses/[id]` — course view with sidebar
-- `/api/videos/signed-url` — secure signed URL endpoint
-- `/dashboard/watch/[videoId]` — video player with progress tracking
-- Videos resume from last position
-- Videos auto-marked complete at 90%
-
----
-
-## PHASE 6: Polish, SEO & Production Readiness ✨ UPCOMING
-**Goal**: Final quality pass — loading states, error handling, SEO metadata, 404 page, and mobile responsiveness check. Keep this session strictly polish, no new features.
-**Estimated Session Size**: Small-Medium (~25k tokens of work)
-
-### Context to Provide Claude
-```
-We're on a Next.js 14 + Supabase course platform. 
-Phases 1-5 are complete. This is the final polish pass.
-Do not build new features. Only improve existing pages.
-Use the design system: dark bg #25292D, primary #6A0DAD, body text #EFEFEF.
-```
-
-### Tasks
-
-**1. Loading States**
-- Add `loading.tsx` files for: `/courses`, `/courses/[id]`, `/dashboard`, `/dashboard/courses/[id]`, `/dashboard/watch/[videoId]`
-- Each loading file should export a skeleton component matching the page's layout
-- Use Tailwind's `animate-pulse` with gray/dark placeholder blocks
-
-**2. Toast Notifications**
-- Install and configure a toast library (recommended: `sonner` — lightweight, no dependencies)
-- Add toasts for: successful enrollment, code redemption error, progress save error, sign out
-- Wrap root layout with the `<Toaster />` component
-
-**3. SEO Metadata**
-- Add `generateMetadata` export to: `/courses/page.tsx`, `/courses/[id]/page.tsx`, `/dashboard` pages
-- Each course detail page should have dynamic OG title: `"[Course Title] — Physics Platform"`
-- Root layout metadata is already set, just ensure it's accurate
-
-**4. Custom 404 Page**
-- Create `app/not-found.tsx`
-- Style consistent with the dark design system
-- Show: large "404" text, "Page not found" message, link back to home and courses
-
-**5. Error Boundaries**
-- `app/courses/[id]/not-found.tsx` already exists — verify it's styled correctly
-- Ensure `app/error.tsx` and `app/dashboard/error.tsx` have a working "Try again" button
-
-**6. Mobile Responsiveness Audit**
-- Test and fix: header mobile menu, course grid, video player controls, dashboard sidebar
-- The video player sidebar should collapse on mobile (drawer/toggle pattern)
-- Ensure the access code modal is usable on small screens
-
-**7. Remove Dev Artifacts**
-- Remove or admin-gate `/debug` page
-- Remove `/refresh-session` page (utility page not needed in production)
-- Clean up `web-docs/` folder if no longer needed
-
-### Dependencies to Install
-```bash
-npm install sonner
-```
-
-### Deliverables
-- Loading skeletons on all major pages
-- Toast notifications for user actions
-- Proper SEO metadata
-- Clean 404 page
-- Mobile-friendly video player
-- Production-ready codebase with no debug artifacts
-
----
-
-## PHASE 4: Student Dashboard & Video Player (ORIGINAL — replaced by Phases 5 & 6 above)
-**Goal**: Student interface for enrolled courses and video playback
-**Token Estimate**: ~45k tokens
-
-> ⚠️ Note: This original phase has been split into the new **Phase 5** (Student Course View & Video Player) and **Phase 6** (Polish). The admin dashboard was also built early (before Phase 2) for testing. Refer to the new phases above.
-
----
-
-## PHASE 5: Teacher Dashboard - Course Management (ORIGINAL — not needed)
-**Goal**: Teacher interface for creating and managing courses
-**Token Estimate**: ~50k tokens
-
-> ⚠️ Note: Since this is a single-teacher platform, the Admin Panel (`/admin`) already serves all course management needs. A separate teacher dashboard is not required. This phase is **skipped**.
-
----
-
-## PHASE 6: Admin Panel & Access Code Management (ORIGINAL — mostly complete)
-**Goal**: Admin interface for user management and code generation
-**Token Estimate**: ~35k tokens
-
-> ✅ Note: The admin panel was built early (before Phase 2) and covers: courses, modules, videos, access code generation/management, student list, and user management. The new **Phase 4 bug fixes** will clean it up. No further work needed on admin.
-
----
-
-## PHASE 7: Polish, Optimization & Testing (ORIGINAL — replaced by Phase 6 above)
-**Goal**: Final touches, performance optimization, bug fixes
-**Token Estimate**: ~30k tokens
-
-> ⚠️ Note: Replaced by the new **Phase 6: Polish, SEO & Production Readiness** above.
-
----
-
-## Critical Code Patterns (Reference These, Don't Re-explain)
-
-### Supabase Client Pattern
-```typescript
-// app/lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
-
-export const createClient = () =>
-  createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-```
-
-### Server Component Data Fetching
-```typescript
-// app/courses/page.tsx
 import { createClient } from '@/lib/supabase/server'
 
-export default async function CoursesPage() {
-  const supabase = createClient()
-  const { data: courses } = await supabase
-    .from('courses')
-    .select('*')
-    .eq('published', true)
+export default async function Page() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()  // NOT getSession()
+  // ...
+}
+```
+
+### Admin/Service Role (bypasses RLS)
+```typescript
+import { createAdminClient } from '@/lib/supabase/admin'
+
+// Only use server-side. Never in client components.
+const admin = createAdminClient()
+```
+
+### Client Component (browser)
+```typescript
+'use client'
+import { useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = useMemo(() => createClient(), [])
+// Never call createClient() in render body
+```
+
+### API Route Pattern
+```typescript
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   
-  return <CourseGrid courses={courses} />
+  const admin = createAdminClient()
+  // Use admin for all DB operations (bypasses RLS)
 }
 ```
 
-### Protected Route Middleware
+### Phone → Email Conversion
 ```typescript
-// middleware.ts
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
+// Phone: 01012345678 → Email: 01012345678@intphy.app
+const email = `${cleanPhone}@intphy.app`
+```
 
-export async function middleware(request) {
-  // Check auth and redirect if needed
+---
+
+## 8. مهمة الاختبار وضمان الجودة / Testing & Load Testing Mission
+
+> **الهدف:** التأكد من أن المنصة تتحمل آلاف المستخدمين المتزامنين قبل النشر الرسمي.
+
+### 8.1 ما الذي نختبره / What We're Testing
+
+#### أ. أداء قاعدة البيانات / Database Performance
+- استعلامات تحت حمل عالٍ (1000+ مستخدم متزامن)
+- كفاءة RLS (سياسات الأمان لا تسبب N+1)
+- الـ indexes الموجودة كافية للاستعلامات الشائعة
+- الـ connection pooling (Supabase يستخدم PgBouncer تلقائيًا)
+
+#### ب. نقاط الضغط الحرجة / Critical Pressure Points
+
+**الأكثر استخدامًا من الطلاب:**
+1. `/dashboard` — تحميل التسجيلات + التقدم + آخر فيديو (3 queries متوازية)
+2. `/dashboard/watch/[videoId]` — حفظ progress كل 5 ثوانٍ (write-heavy)
+3. `/api/quiz` POST — تسليم الكويز (read all questions + upsert submission)
+4. `/api/exam` POST — تسليم الامتحان (نفس النمط)
+5. `/courses` — صفحة الكورسات (مع فلترة التسجيلات للطلاب)
+6. `/api/enroll` POST — استرداد الكود والتسجيل (atomic RPC)
+
+**الأكثر استخدامًا من الأدمن:**
+1. `/admin` dashboard — aggregate queries على enrollments
+2. `/admin/courses/[id]/content` — fetch all modules + videos + quizzes + exams
+3. `/admin/students` — 500 rows max
+
+### 8.2 فحص الـ Database Indexes / Database Index Audit
+
+```sql
+-- تشغيل هذا في Supabase SQL Editor للتحقق من الـ indexes الموجودة
+SELECT
+  schemaname,
+  tablename,
+  indexname,
+  indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+ORDER BY tablename, indexname;
+```
+
+**الـ Indexes الحرجة التي يجب التأكد من وجودها:**
+
+| Table | Column(s) | Why |
+|-------|-----------|-----|
+| enrollments | (user_id) | dashboard loads |
+| enrollments | (course_id) | course stats |
+| enrollments | (user_id, course_id) | enrollment check |
+| user_progress | (user_id) | dashboard continue watching |
+| user_progress | (video_id) | video completion check |
+| user_progress | (user_id, video_id) | upsert conflict |
+| quiz_submissions | (user_id, quiz_id) | submission lookup |
+| module_exam_submissions | (user_id, exam_id) | submission lookup |
+| standalone_exam_submissions | (user_id, exam_id) | submission lookup |
+| modules | (course_id) | course content load |
+| videos | (module_id) | video list |
+| access_codes | (code) | code redemption |
+| access_codes | (course_id) | admin filter |
+| user_profiles | (phone_number) | login |
+| standalone_exam_questions | (exam_id) | question load |
+
+### 8.3 اختبار الأداء / Performance Tests
+
+**الأدوات المقترحة:**
+- **k6** (https://k6.io) — load testing scripts
+- **Supabase Dashboard → Database → Performance** — slow query log
+- **Vercel Analytics** — real user metrics
+- **pgbench** — direct PostgreSQL load testing
+
+#### Test Scenario 1: Student Login Storm
+```javascript
+// k6 script — simulate 500 students logging in simultaneously
+import http from 'k6/http'
+import { check, sleep } from 'k6'
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 100 },   // ramp up to 100 users
+    { duration: '1m',  target: 500 },   // hold at 500 users
+    { duration: '30s', target: 0 },     // ramp down
+  ],
+}
+
+export default function () {
+  const res = http.post('https://int-phy.vercel.app/api/auth/signout', {})
+  check(res, { 'status 200': (r) => r.status === 200 })
+  sleep(1)
 }
 ```
 
-### R2 Upload API Route Pattern
-```typescript
-// app/api/upload/route.ts
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+#### Test Scenario 2: Dashboard Load
+```javascript
+// Simulate 200 students hitting /dashboard simultaneously
+// Each triggers: enrollments query + user_progress query + profile query
+import http from 'k6/http'
 
-export async function POST(request: Request) {
-  // Generate presigned URL
-  // Return to client for direct upload
+export const options = {
+  vus: 200,
+  duration: '2m',
+}
+
+export default function () {
+  // Requires valid session cookie — use authenticated requests
+  http.get('https://int-phy.vercel.app/dashboard', {
+    headers: { Cookie: `sb-vrefcmplibzoayfyfidd-auth-token=YOUR_TEST_TOKEN` }
+  })
 }
 ```
 
-**Tell Claude**: "Use the Supabase client pattern from the Critical Code Patterns section"
+#### Test Scenario 3: Video Progress Save Storm
+```javascript
+// Simulate 300 students saving video progress every 5 seconds
+// This is the most write-heavy operation
+export const options = {
+  vus: 300,
+  duration: '5m',
+}
 
----
-
-## Post-Development: Deployment
-
-### Deployment Checklist
-1. **Vercel Deployment** (recommended for Next.js)
-   - Connect GitHub repository
-   - Configure environment variables
-   - Setup custom domain (optional)
-
-2. **Supabase Production**
-   - Create production project
-   - Run migrations
-   - Update environment variables
-
-3. **Cloudflare R2**
-   - Setup production bucket
-   - Configure CORS
-   - Update API keys
-
-4. **Post-Deployment**
-   - Create first admin user
-   - Test critical flows in production
-   - Monitor error logs
-   - Setup analytics (optional)
-
----
-
-## Guidelines for AI-Assisted Development
-
-### How to Use Best Practice Links:
-**DON'T paste entire documentation** - This wastes tokens!
-
-**DO mention patterns:**
-```
-"Follow the Next.js App Router patterns for server components"
-"Use Supabase RLS best practices for securing the users table"
-"Implement Cloudflare R2 presigned URLs for video uploads"
+export default function () {
+  http.post('https://int-phy.vercel.app/api/videos/progress', JSON.stringify({
+    videoId: 'KNOWN_VIDEO_ID',
+    position: Math.floor(Math.random() * 3600),
+    completed: false,
+  }), { headers: { 'Content-Type': 'application/json' } })
+  sleep(5)
+}
 ```
 
-**When AI struggles:**
-1. Ask: "What's the recommended pattern for [specific task]?"
-2. AI will reference the docs without you pasting them
-3. If AI hallucinates, then share a specific snippet
+#### Test Scenario 4: Quiz Submission Spike
+```javascript
+// Simulate entire class submitting quiz at same time
+export const options = {
+  vus: 100,
+  duration: '30s',
+}
 
-**Token-Saving Tips:**
-- Reference links by name: "Use the react-player library approach"
-- Let AI access its training: Most of these docs are in Claude's knowledge
-- Only paste code snippets when debugging specific errors
+export default function () {
+  http.post('https://int-phy.vercel.app/api/quiz', JSON.stringify({
+    quizId: 'KNOWN_QUIZ_ID',
+    answers: { 'Q1_ID': 'a', 'Q2_ID': 'b', 'Q3_ID': 'c' }
+  }), { headers: { 'Content-Type': 'application/json' } })
+}
+```
 
-### For Each Phase:
-1. **Start Fresh**: Begin each phase in a new Claude conversation to avoid token limits
-2. **Provide Context**: Copy the relevant phase section from this document
-3. **Attach Figma**: Always include Figma designs in your prompt
-4. **Test Incrementally**: Test each feature as it's built
-5. **Save Progress**: Commit code after completing each major task
+### 8.4 Supabase-Specific Checks
 
-### Communication with Claude:
-- Be specific about what you're building
-- Mention which phase you're on
-- Include error messages in full when debugging
-- Ask for explanations when you don't understand something
-- Request step-by-step instructions for complex tasks
+**تشغيل هذه الاستعلامات في SQL Editor:**
 
-### When Bugs Arise:
-- Try to understand the error first
-- Check console and network tabs
-- Review the code AI generated
-- Ask AI for debugging help if stuck
-- Document the solution for future reference
+```sql
+-- 1. Check for missing foreign key indexes (common performance killer)
+SELECT
+  tc.table_name,
+  kcu.column_name,
+  ccu.table_name AS foreign_table,
+  'MISSING INDEX' as issue
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE tablename = tc.table_name
+      AND indexdef LIKE '%' || kcu.column_name || '%'
+  );
 
-### Code Review Points:
-- Ensure proper TypeScript typing
-- Check for security issues (especially RLS policies)
-- Verify responsive design
-- Test with both themes
-- Confirm proper error handling
+-- 2. Check table row counts and bloat
+SELECT
+  relname AS table_name,
+  n_live_tup AS live_rows,
+  n_dead_tup AS dead_rows,
+  ROUND(n_dead_tup * 100.0 / NULLIF(n_live_tup + n_dead_tup, 0), 1) AS dead_pct
+FROM pg_stat_user_tables
+WHERE schemaname = 'public'
+ORDER BY n_live_tup DESC;
+
+-- 3. Find slow queries (requires pg_stat_statements — already enabled)
+SELECT
+  query,
+  calls,
+  mean_exec_time,
+  total_exec_time,
+  rows
+FROM pg_stat_statements
+WHERE query NOT LIKE '%pg_%'
+ORDER BY mean_exec_time DESC
+LIMIT 20;
+
+-- 4. Check RLS policy complexity (policies that call auth.uid() many times)
+SELECT
+  tablename,
+  policyname,
+  cmd,
+  qual
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND (qual LIKE '%auth.uid()%' OR with_check LIKE '%auth.uid()%')
+ORDER BY tablename;
+
+-- 5. Check for tables without RLS enabled
+SELECT tablename
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename NOT IN (
+    SELECT tablename FROM pg_tables t
+    JOIN pg_class c ON c.relname = t.tablename
+    WHERE c.relrowsecurity = true
+  );
+
+-- 6. Connection count check (should stay well under 60 on free tier)
+SELECT count(*), state
+FROM pg_stat_activity
+GROUP BY state;
+
+-- 7. Simulate load: check enrollment query EXPLAIN ANALYZE
+EXPLAIN ANALYZE
+SELECT e.*, c.id, c.title, c.description, c.thumbnail_url, c.deleted_at
+FROM enrollments e
+JOIN courses c ON c.id = e.course_id
+WHERE e.user_id = (SELECT id FROM user_profiles LIMIT 1)
+ORDER BY e.enrolled_at DESC;
+
+-- 8. Check the most expensive query (dashboard continue-watching)
+EXPLAIN ANALYZE
+SELECT up.*, v.id, v.title, v.duration, v.module_id,
+       m.title as module_title, m.course_id,
+       c.id as course_id, c.title as course_title
+FROM user_progress up
+JOIN videos v ON v.id = up.video_id
+JOIN modules m ON m.id = v.module_id
+JOIN courses c ON c.id = m.course_id
+WHERE up.user_id = (SELECT id FROM user_profiles WHERE role = 'student' LIMIT 1)
+ORDER BY up.last_watched_at DESC
+LIMIT 5;
+```
+
+### 8.5 اختبارات وظيفية / Functional Tests
+
+**يجب اختبار كل هذه السيناريوهات يدويًا:**
+
+#### تدفق الطالب الكامل / Full Student Flow
+- [ ] إنشاء حساب جديد بـ رقم هاتف + كلمة سر + صف دراسي
+- [ ] تسجيل الدخول
+- [ ] فتح صفحة الكورسات — الكورسات المشترك فيها لا تظهر
+- [ ] إدخال كود صحيح → التسجيل في الكورس
+- [ ] إدخال كود خاطئ → رسالة خطأ واضحة
+- [ ] إدخال كود منتهي → رسالة خطأ
+- [ ] إدخال كود مستخدم سابقًا → رسالة خطأ
+- [ ] فتح الداشبورد → يظهر الكورس الجديد مع 0%
+- [ ] مشاهدة فيديو → يتحفظ الموضع بعد 5 ثوانٍ
+- [ ] إغلاق المتصفح وإعادة الفتح → يستكمل من آخر موضع
+- [ ] إكمال 90% من الفيديو → يُحسب مكتمل
+- [ ] حل كويز → يظهر الترتيب والشرح
+- [ ] حل امتحان موديول → يظهر الترتيب والشرح
+- [ ] فتح `/dashboard/assignments` → يظهر الواجب
+- [ ] حل واجب → يُسجل كـ "تسليم واجب" لا "تسليم امتحان"
+- [ ] فتح `/dashboard/exams` → تظهر الامتحانات المستقلة المنشورة فقط
+- [ ] حل امتحان مستقل → يُحفظ في `standalone_exam_submissions`
+
+#### تدفق الأدمن / Admin Flow
+- [ ] تسجيل دخول بحساب أدمن
+- [ ] إنشاء كورس جديد
+- [ ] رفع صورة thumbnail
+- [ ] إضافة وحدة درس + فيديو يوتيوب
+- [ ] إضافة ملف PDF للوحدة
+- [ ] إضافة كويز بـ 3 أسئلة نصية مع مفتاح الإجابة
+- [ ] إضافة وحدة امتحان + سؤالين (نص + صورة)
+- [ ] إضافة وحدة واجب + 3 أسئلة
+- [ ] نشر الكورس
+- [ ] توليد 5 أكواد للكورس
+- [ ] مشاركة كود → يفتح share sheet
+- [ ] تحديد كود بعلامة ✓
+- [ ] حذف كود غير مستخدم
+- [ ] فتح `/admin/standalone-exams` → إنشاء امتحان مستقل
+- [ ] إضافة 5 أسئلة للامتحان المستقل
+- [ ] نشر الامتحان المستقل
+- [ ] فتح إحصائيات الكورس → يظهر عدد المشتركين
+- [ ] الضغط على كويز في الإحصائيات → يفتح صفحة الترتيب
+
+#### تدفق التطبيق المحمول / Mobile App Flow
+- [ ] تسجيل دخول بحساب أدمن/معلم
+- [ ] تبويب كورسات → يظهر قائمة الكورسات مجمعة بالصف
+- [ ] تعديل كورس → حفظ → يُحدَّث
+- [ ] تبويب طلاب → يظهر قائمة الاشتراكات
+- [ ] الضغط على طالب → يفتح ملفه الشخصي الكامل
+- [ ] تبويب امتحانات → إنشاء امتحان مستقل جديد
+- [ ] إضافة سؤال → حفظ → يظهر في القائمة
+- [ ] الضغط على "🏆 ترتيب" على كويز → يظهر الترتيب
+- [ ] تبويب أكواد → توليد 3 أكواد
+- [ ] تبويب مستخدمين → حظر مستخدم → إلغاء الحظر
+- [ ] إعادة تعيين كلمة سر → يعمل عبر Edge Function
+
+### 8.6 اختبارات الأمان / Security Tests
+
+```
+- [ ] محاولة الوصول لـ /admin بحساب طالب → يُعاد توجيه لـ /dashboard
+- [ ] محاولة تسليم امتحان مرتين → يُحدَّث نفس الـ submission (upsert)
+- [ ] محاولة استرداد إجابات امتحان قبل التسليم → 403
+- [ ] محاولة رفع صورة لـ exam-images بدون جلسة → 401
+- [ ] طالب يحاول قراءة بيانات طالب آخر → RLS يمنع
+- [ ] محاولة الوصول لـ /api/admin/* بحساب طالب → 401
+- [ ] كود منتهي الصلاحية → يُرفض
+- [ ] كود مستخدم مسبقًا → يُرفض (الكود يُحذف بعد الاستخدام)
+- [ ] طالب محظور يحاول الدخول → يُسجَّل خروجه فورًا
+```
+
+### 8.7 اختبار الحمل المحاكي / Simulated Load Test (Manual)
+
+إذا لم يكن k6 متاحًا، يمكن محاكاة الضغط يدويًا:
+
+1. **افتح 20 تبويب متصفح** على `/dashboard/watch/[videoId]` بنفس الوقت
+2. **استخدم Browser DevTools** → Network → تحقق أن استجابة `/api/videos/progress` < 500ms
+3. **في Supabase Dashboard** → Database → Connection Pooling → تحقق أن عدد الـ connections لا يتجاوز 50
+4. **شاهد Vercel Function Logs** أثناء الضغط للتحقق من عدم وجود timeouts
+
+### 8.8 المقاييس المستهدفة / Target Metrics
+
+| Endpoint | Max Response Time | Max Concurrent Users |
+|----------|------------------|---------------------|
+| `/dashboard` | < 2s | 500 |
+| `/api/videos/progress` | < 300ms | 1000 |
+| `/api/quiz` POST | < 500ms | 200 |
+| `/api/exam` POST | < 500ms | 200 |
+| `/api/enroll` POST | < 1s | 100 |
+| `/courses` | < 1.5s | 1000 |
+| Admin pages | < 3s | 20 |
+
+### 8.9 مشاكل محتملة وحلولها / Known Potential Issues & Fixes
+
+#### مشكلة 1: N+1 في صفحة الداشبورد
+**المشكلة:** Dashboard fetches enrollments, then for each enrollment fetches videos separately.  
+**الحل المقترح:**
+```sql
+-- Add this composite index if missing
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_videos_module_course
+ON videos(module_id);
+
+-- And ensure modules has index on course_id
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_modules_course_id
+ON modules(course_id);
+```
+
+#### مشكلة 2: Video Progress Write Storm
+**المشكلة:** 1000 طالب يكتبون progress كل 5 ثوانٍ = 200 writes/second.  
+**الحل الحالي:** `upsert` على `(user_id, video_id)` — كافٍ لـ Supabase free tier.  
+**إذا وصلنا لـ 5000+ طالب متزامن:** فكّر في batching أو Rate limiting على هذا الـ endpoint.
+
+#### مشكلة 3: RLS على standalone_exam_questions
+**المشكلة:** Policy تفحص `published` على `standalone_exams` — join مخفية في كل query.  
+**التحقق:**
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM standalone_exam_questions
+WHERE exam_id = 'SOME_ID';
+-- يجب أن يستخدم index على exam_id لا seq scan
+```
+
+#### مشكلة 4: صفحة الكورسات مع فلترة التسجيلات
+**الكود الحالي:** يجلب enrollments أولًا ثم يفلتر في JavaScript.  
+**أفضل:** إضافة `NOT IN` في الـ SQL query مباشرة لتقليل البيانات المنقولة.
+
+#### مشكلة 5: Connection Pool على Free Tier
+**الحد:** Supabase free tier = 60 direct connections.  
+**الحل:** Vercel Serverless + Supabase Edge يستخدمان PgBouncer تلقائيًا — راقب في:  
+Supabase Dashboard → Database → Connection Pooling
+
+### 8.10 اختبار Supabase Storage
+
+```bash
+# تحقق من حجم الـ Storage المستخدم (الحد 500MB على free tier)
+# افتح Supabase Dashboard → Storage → مراجعة الـ buckets:
+# - exam-images (صور أسئلة الامتحانات)
+# - module-files (ملفات PDF وغيرها)
+# - course-thumbnails (صور الكورسات)
+```
+
+**نصيحة:** الصور الكبيرة في `exam-images` هي المخاطرة الأكبر. تأكد من:
+- Max upload size مضبوط في الكود
+- الصور يتم ضغطها قبل الرفع (تحقق من `upload-exam-image/route.ts`)
 
 ---
 
-## Environment Variables Template
+## 9. Edge Functions
+
+```
+admin-reset-password     يُعاد توجيه طلبات تغيير كلمة السر من الأدمن
+course-stats             يجمع إحصائيات الكورس (enrollments, progress, quiz/exam scores)
+```
+
+**التحقق من وجودها:**
+```bash
+supabase functions list --project-ref vrefcmplibzoayfyfidd
+```
+
+---
+
+## 10. Environment Variables Required
 
 ```env
-# .env.local
+# Website (.env.local in INTPHY-REAL root)
+NEXT_PUBLIC_SUPABASE_URL=https://vrefcmplibzoayfyfidd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Cloudflare R2
-R2_ACCOUNT_ID=your-account-id
-R2_ACCESS_KEY_ID=your-access-key
-R2_SECRET_ACCESS_KEY=your-secret-key
-R2_BUCKET_NAME=your-bucket-name
-R2_PUBLIC_URL=https://your-bucket.r2.dev
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Mobile App (lib/supabase.ts — hardcoded, update before prod)
+SUPABASE_URL=https://vrefcmplibzoayfyfidd.supabase.co
+SUPABASE_ANON_KEY=eyJ...
 ```
 
 ---
 
-## Success Criteria
+## 11. ملفات المشروع المهمة / Key Files
 
-### Phase 1 ✅
-- Project runs locally
-- Theme toggle works
-- Navigation structure in place
+```
+INTPHY-REAL/
+├── app/
+│   ├── (public)/courses/page.tsx         ← صفحة الكورسات (enrolled courses filtered out)
+│   ├── dashboard/
+│   │   ├── layout.tsx                    ← Auth + ban check
+│   │   ├── page.tsx                      ← Main student dashboard
+│   │   ├── assignments/page.tsx          ← Homework page
+│   │   ├── exams/page.tsx                ← Standalone exams page
+│   │   ├── exam/[examId]/page.tsx        ← Exam/homework taker (?type=homework)
+│   │   ├── standalone-exam/[examId]/page.tsx  ← Standalone exam taker
+│   │   └── watch/                        ← Video player
+│   ├── admin/
+│   │   ├── layout.tsx                    ← Admin auth guard
+│   │   ├── courses/[id]/content/page.tsx ← Content manager (lesson/exam/homework)
+│   │   └── standalone-exams/             ← Standalone exam management
+│   └── api/
+│       ├── exam/route.ts                 ← Module exam API
+│       ├── quiz/route.ts                 ← Quiz API
+│       ├── standalone-exam/route.ts      ← Standalone exam API
+│       └── assignments/route.ts          ← Homework list API
+├── components/
+│   └── admin-sidebar.tsx                 ← Sidebar with all 6 admin links
+└── lib/
+    ├── supabase/
+    │   ├── server.ts                     ← SSR client
+    │   ├── client.ts                     ← Browser client
+    │   └── admin.ts                      ← Service role client
 
-### Phase 2 ✅
-- Can sign up and log in
-- Database tables exist with RLS
-- Roles are enforced
-
-### Phase 3 ✅
-- Landing page matches design
-- Can browse all courses
-- Code redemption works
-
-### Phase 4 (Bug Fixes) ✓ when:
-- Theme toggle works
-- Header/footer visible on all public pages
-- Free courses enroll without a code
-- Admin access code filter works by course
-- No console errors on any page
-
-### Phase 5 (Video Player) ✓ when:
-- Student can navigate to a course from dashboard
-- Sidebar shows all modules and videos with progress
-- Video plays from Cloudflare R2
-- Position saves every 5 seconds
-- Video auto-marks complete at 90%
-- Student resumes from last position on revisit
-
-### Phase 6 (Polish) ✓ when:
-- Loading skeletons appear while pages load
-- Toast appears on enrollment success/failure
-- All pages have proper SEO titles
-- 404 page is styled and working
-- No debug/dev pages accessible in production
-
----
-
-## Tips for Success
-
-1. **Don't Skip Phases**: Each phase builds on the previous
-2. **Test Thoroughly**: Test each feature before moving on
-3. **Keep Figma Handy**: Always reference designs when building UI
-4. **Use TypeScript**: Don't disable type checking
-5. **Commit Often**: Save your progress regularly
-6. **Ask for Clarification**: If AI generates unclear code, ask for explanation
-7. **Mobile First**: Always test on mobile as you build
-8. **Accessibility**: Ask AI to include ARIA labels and keyboard navigation
+management/ (Expo App)
+├── App.tsx                               ← 5-tab navigator
+├── screens/
+│   ├── CoursesScreen.tsx                 ← Course list grouped by grade
+│   ├── CourseEditScreen.tsx              ← Create/edit course
+│   ├── CourseStatsScreen.tsx             ← Course analytics + quiz/exam rankings
+│   ├── StudentsScreen.tsx                ← Student enrollments list → profile
+│   ├── StandaloneExamsScreen.tsx         ← Standalone exam management
+│   ├── CodesScreen.tsx                   ← Access code management
+│   ├── UsersScreen.tsx                   ← User management (ban/delete/reset pw)
+│   ├── UserDetailScreen.tsx              ← Full student profile
+│   ├── QuizExamRankingsScreen.tsx        ← Rankings for quiz/exam/homework
+│   └── StandaloneExamStatsScreen.tsx     ← Rankings for standalone exams
+└── lib/
+    ├── supabase.ts                       ← Supabase client (AsyncStorage)
+    └── theme.ts                          ← COLORS constants
+```
 
 ---
 
-## Common Pitfalls to Avoid
+## 12. ما لم يُبنَ بعد / Not Yet Built
 
-- ❌ Skipping RLS policies (security risk)
-- ❌ Not handling loading states
-- ❌ Ignoring error cases
-- ❌ Forgetting to test on mobile
-- ❌ Not validating forms properly
-- ❌ Hardcoding values instead of using environment variables
-- ❌ Not testing video playback in different browsers
-- ❌ Forgetting to add confirmation dialogs for destructive actions
+هذه الأشياء **غير موجودة** في الكود حاليًا — لا تفترض وجودها:
 
----
-
-## Emergency Contacts & Resources
-
-### Documentation
-- [Next.js Docs](https://nextjs.org/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [Cloudflare R2 Docs](https://developers.cloudflare.com/r2/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-
-### Community Help
-- Next.js Discord
-- Supabase Discord
-- Stack Overflow
-
-### When Completely Stuck
-1. Review the phase objectives
-2. Check if previous phases are working
-3. Search for similar examples online
-4. Ask in developer communities
-5. Simplify the feature and try again
+- ❌ نظام إشعارات (push notifications)
+- ❌ دفع إلكتروني (كل المدفوعات نقدية + أكواد)
+- ❌ تعليقات أو نقاشات
+- ❌ شهادات إتمام
+- ❌ خاصية البحث داخل الفيديو
+- ❌ تطبيق للطلاب (فقط الموقع للطلاب، التطبيق للأدمن فقط)
+- ❌ CI/CD pipeline رسمي
+- ❌ اختبارات unit/integration مكتوبة مسبقًا
 
 ---
 
-## Version History
-- v1.0 - Initial agents.md creation
-- v2.0 - Updated after Phase 3 completion. Restructured phases based on actual codebase state. Added Current Status section, bug fix checklist, and new Phase 4/5/6 replacing original Phase 4-7. Admin dashboard built early is accounted for. Teacher dashboard phase removed (single-teacher platform uses admin panel).
+## 13. قواعد للعامل / Agent Rules
+
+1. **لا تغير schema** بدون إضافة migration جديد عبر `Supabase:apply_migration`
+2. **لا تستخدم `getSession()`** على السيرفر — استخدم `getUser()` دائمًا
+3. **لا تعرض `SUPABASE_SERVICE_ROLE_KEY`** في client components أبدًا
+4. **لا تحذف migration** موجود — أضف migration جديد للتراجع
+5. **الـ admin client** فقط في Server Components وAPI Routes وEdge Functions
+6. **كل route جديد في `/api/admin/`** يجب أن يتحقق من الـ role أولًا
+7. **أي تغيير في RLS policies** يجب اختباره بـ `EXPLAIN ANALYZE` للتأكد من الأداء
+8. **لا تُضيف `'use server'`** داخل function body — فقط في أعلى الملف
+9. **Supabase Storage quota: 500MB** — لا ترفع ملفات كبيرة بدون فحص الحجم
+10. **اتجاه RTL** في كل الـ UI — `dir="rtl"` على `<html>`، وكل نصوص واجهة المستخدم بالعربية
 
 ---
 
-**Remember**: This is a learning project. It's okay to make mistakes, iterate, and improve. The goal is to build a functional platform while learning modern web development with AI assistance.
+## 14. سجل التغييرات / Changelog Summary
+
+| التاريخ | التغيير |
+|---------|---------|
+| فبراير 2026 | بناء المنصة الأساسية (auth, courses, videos, dashboard) |
+| مارس 2026 | نظام الكويز والامتحانات داخل الكورسات |
+| مارس 2026 | **وحدة الواجبات** (homework module type) |
+| مارس 2026 | **الامتحانات المستقلة** (standalone_exams — خارج الكورسات، لكل الطلاب) |
+| مارس 2026 | صفحات `/dashboard/assignments` و `/dashboard/exams` |
+| مارس 2026 | فلترة الكورسات المشترك فيها من صفحة `/courses` |
+| مارس 2026 | تطبيق الأدمن: إضافة تبويبات الطلاب والامتحانات المستقلة |
+| مارس 2026 | تطبيق الأدمن: صفحات الترتيب للكويزات والامتحانات والواجبات |
+| مارس 2026 | تطبيق الأدمن: الملف الشخصي الكامل للطالب عند الضغط |

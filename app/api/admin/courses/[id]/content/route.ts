@@ -15,7 +15,6 @@ async function verifyAdmin() {
   return profile?.role === 'admin' || profile?.role === 'teacher' ? user : null
 }
 
-// GET /api/admin/courses/[id]/content
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,7 +35,6 @@ export async function GET(
 
   const moduleIds = (modulesData ?? []).map((m: any) => m.id)
 
-  // Files
   let filesMap: Record<string, any[]> = {}
   if (moduleIds.length > 0) {
     const { data: filesData } = await admin
@@ -47,7 +45,6 @@ export async function GET(
     }
   }
 
-  // Quizzes (for lesson modules)
   let quizzesMap: Record<string, any[]> = {}
   if (moduleIds.length > 0) {
     const { data: quizzesData } = await admin
@@ -63,7 +60,6 @@ export async function GET(
     }
   }
 
-  // Exams (for exam modules)
   let examsMap: Record<string, any> = {}
   if (moduleIds.length > 0) {
     const { data: examsData } = await admin
@@ -91,7 +87,6 @@ export async function GET(
   return NextResponse.json({ course, modules })
 }
 
-// POST /api/admin/courses/[id]/content — all mutations
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -104,25 +99,19 @@ export async function POST(
   const body = await req.json()
   const { action } = body
 
-  // ── Add Module (lesson or exam) ──
   if (action === 'addModule') {
     const { title, orderIndex, moduleType = 'lesson' } = body
     const { data: mod, error } = await admin.from('modules').insert({
       course_id: courseId, title, order_index: orderIndex, module_type: moduleType,
     }).select().single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-    // If exam module, auto-create the module_exams record
-    if (moduleType === 'exam') {
-      const { error: examErr } = await admin.from('module_exams').insert({
-        module_id: mod.id, title,
-      })
+    if (moduleType === 'exam' || moduleType === 'homework') {
+      const { error: examErr } = await admin.from('module_exams').insert({ module_id: mod.id, title })
       if (examErr) return NextResponse.json({ error: examErr.message }, { status: 500 })
     }
     return NextResponse.json({ success: true })
   }
 
-  // ── Delete Module ──
   if (action === 'deleteModule') {
     const { moduleId } = body
     const { error } = await admin.from('modules').delete().eq('id', moduleId)
@@ -130,22 +119,16 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Add Video ──
   if (action === 'addVideo') {
     const { moduleId, title, orderIndex, videoUrl, duration, muxAssetId, muxPlaybackId } = body
     const payload: any = { module_id: moduleId, title, order_index: orderIndex }
     if (videoUrl) { payload.video_url = videoUrl; payload.duration = duration ?? null }
-    if (muxAssetId) {
-      payload.mux_asset_id = muxAssetId
-      payload.mux_playback_id = muxPlaybackId
-      payload.duration = duration ?? null
-    }
+    if (muxAssetId) { payload.mux_asset_id = muxAssetId; payload.mux_playback_id = muxPlaybackId; payload.duration = duration ?? null }
     const { error } = await admin.from('videos').insert(payload)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }
 
-  // ── Delete Video ──
   if (action === 'deleteVideo') {
     const { videoId } = body
     const { error } = await admin.from('videos').delete().eq('id', videoId)
@@ -153,7 +136,6 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Add File ──
   if (action === 'addFile') {
     const { moduleId, name, fileUrl, fileSize, fileType, orderIndex } = body
     const { error } = await admin.from('module_files').insert({
@@ -164,7 +146,6 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Delete File ──
   if (action === 'deleteFile') {
     const { fileId } = body
     const { error } = await admin.from('module_files').delete().eq('id', fileId)
@@ -172,16 +153,13 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Add Quiz ──
   if (action === 'addQuiz') {
     const { moduleId, title, orderIndex, questions } = body
-    // Insert quiz
     const { data: quiz, error: quizErr } = await admin.from('quizzes').insert({
       module_id: moduleId, title, order_index: orderIndex,
     }).select().single()
     if (quizErr) return NextResponse.json({ error: quizErr.message }, { status: 500 })
 
-    // Insert questions
     if (questions?.length) {
       const rows = questions.map((q: any, i: number) => ({
         quiz_id: quiz.id,
@@ -192,6 +170,7 @@ export async function POST(
         option_c: q.option_c,
         option_d: q.option_d,
         correct: q.correct,
+        solution: q.solution?.trim() || null,
       }))
       const { error: qErr } = await admin.from('quiz_questions').insert(rows)
       if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 })
@@ -199,7 +178,6 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Delete Quiz ──
   if (action === 'deleteQuiz') {
     const { quizId } = body
     const { error } = await admin.from('quizzes').delete().eq('id', quizId)
@@ -207,18 +185,51 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
-  // ── Add Exam Question Item (image or text + answer) ──
+  if (action === 'updateQuizQuestion') {
+    const { questionId, questionText, correct, optionA, optionB, optionC, optionD, solution } = body
+    const patch: any = {
+      question_text: questionText,
+      correct,
+      option_a: optionA || null,
+      option_b: optionB || null,
+      option_c: optionC || null,
+      option_d: optionD || null,
+      solution: solution?.trim() || null,
+    }
+    const { error } = await admin.from('quiz_questions').update(patch).eq('id', questionId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
   if (action === 'addExamQuestion') {
-    const { examId, imageUrl, questionText, correct, orderIndex } = body
+    const { examId, imageUrl, questionText, correct, orderIndex, optionA, optionB, optionC, optionD, solution } = body
     const payload: any = { exam_id: examId, correct, order_index: orderIndex }
     if (imageUrl) payload.image_url = imageUrl
     if (questionText) payload.question_text = questionText
+    if (optionA) payload.option_a = optionA
+    if (optionB) payload.option_b = optionB
+    if (optionC) payload.option_c = optionC
+    if (optionD) payload.option_d = optionD
+    payload.solution = solution?.trim() || null
     const { error } = await admin.from('exam_question_items').insert(payload)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }
 
-  // ── Delete Exam Question Item ──
+  if (action === 'updateExamQuestion') {
+    const { questionId, questionText, correct, optionA, optionB, optionC, optionD, solution } = body
+    const patch: any = { correct }
+    if (questionText !== undefined) patch.question_text = questionText
+    if (optionA !== undefined) patch.option_a = optionA || null
+    if (optionB !== undefined) patch.option_b = optionB || null
+    if (optionC !== undefined) patch.option_c = optionC || null
+    if (optionD !== undefined) patch.option_d = optionD || null
+    patch.solution = solution?.trim() || null
+    const { error } = await admin.from('exam_question_items').update(patch).eq('id', questionId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
   if (action === 'deleteExamQuestion') {
     const { questionId } = body
     const { error } = await admin.from('exam_question_items').delete().eq('id', questionId)

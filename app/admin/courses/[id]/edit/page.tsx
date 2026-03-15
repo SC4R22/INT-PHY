@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
+const GRADES = [
+  { value: 'sec_1', label: 'ثانوي 1' },
+  { value: 'sec_2', label: 'ثانوي 2' },
+  { value: 'sec_3', label: 'ثانوي 3' },
+]
+
 export default function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -77,9 +83,8 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     setSuccess(false)
     setSaving(true)
 
-    let thumbnail_url: string | null | undefined = undefined // undefined = no change
+    let thumbnail_url: string | null | undefined = undefined
 
-    // Upload new thumbnail if provided
     if (thumbnailFile) {
       const supabase = createClient()
       const ext = thumbnailFile.name.split('.').pop()
@@ -91,7 +96,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       const { data } = supabase.storage.from('course-thumbnails').getPublicUrl(path)
       thumbnail_url = data.publicUrl
     } else if (removeThumb) {
-      thumbnail_url = null // explicitly remove
+      thumbnail_url = null
     }
 
     const res = await fetch(`/api/admin/courses/${id}/details`, {
@@ -158,7 +163,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border-color)]">
           <label className="block text-theme-secondary text-sm font-bold mb-4 uppercase tracking-wider">صورة الكورس</label>
           <div
-className="relative rounded-xl border-2 border-dashed border-[var(--border-color)] hover:border-primary transition-colors cursor-pointer overflow-hidden"
+            className="relative rounded-xl border-2 border-dashed border-[var(--border-color)] hover:border-primary transition-colors cursor-pointer overflow-hidden"
             style={{ aspectRatio: '16/9' }}
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleDrop}
@@ -242,14 +247,7 @@ className="relative rounded-xl border-2 border-dashed border-[var(--border-color
           <label className="block text-theme-secondary text-sm font-bold mb-4 uppercase tracking-wider">الصف المستهدف</label>
           <p className="text-theme-muted text-xs mb-4">فقط طلاب الصف المحدد يمكنهم رؤية هذا الكورس. اتركه فارغًا لإظهاره لكل الصفوف.</p>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'prep_1', label: 'إعدادي 1' },
-              { value: 'prep_2', label: 'إعدادي 2' },
-              { value: 'prep_3', label: 'إعدادي 3' },
-              { value: 'sec_1',  label: 'ثانوي 1' },
-              { value: 'sec_2',  label: 'ثانوي 2' },
-              { value: 'sec_3',  label: 'ثانوي 3' },
-            ].map((g) => (
+            {GRADES.map((g) => (
               <button key={g.value} type="button"
                 onClick={() => setForm(prev => ({ ...prev, target_grade: prev.target_grade === g.value ? '' : g.value }))}
                 className={`py-3 rounded-lg font-bold text-sm border-2 transition-all ${

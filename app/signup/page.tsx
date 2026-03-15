@@ -5,12 +5,9 @@ import { signup } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const GRADES = [
-  { value: 'prep_1', label: 'إعدادي أول' },
-  { value: 'prep_2', label: 'إعدادي ثاني' },
-  { value: 'prep_3', label: 'إعدادي ثالث' },
-  { value: 'sec_1',  label: 'أول ثانوي' },
-  { value: 'sec_2',  label: 'تاني ثانوي' },
-  { value: 'sec_3',  label: 'تالت ثانوي' },
+  { value: 'sec_1', label: 'أول ثانوي' },
+  { value: 'sec_2', label: 'تاني ثانوي' },
+  { value: 'sec_3', label: 'تالت ثانوي' },
 ]
 
 const INPUT_STYLE = { border: '3px solid transparent', borderImage: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%) 1' }

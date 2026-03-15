@@ -7,7 +7,6 @@ async function verifyAdminOrTeacher() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  // Use admin client to bypass RLS for the role check
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('user_profiles')
@@ -17,6 +16,22 @@ async function verifyAdminOrTeacher() {
 
   if (!profile || !['admin', 'teacher'].includes(profile.role)) return null
   return user
+}
+
+// GET /api/admin/courses — list all courses
+export async function GET() {
+  const user = await verifyAdminOrTeacher()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const admin = createAdminClient()
+  const { data: courses, error } = await admin
+    .from('courses')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ courses })
 }
 
 // POST /api/admin/courses — create a new course

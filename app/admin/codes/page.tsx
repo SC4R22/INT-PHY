@@ -5,7 +5,7 @@ import { generateAccessCodes, deleteAccessCode } from '@/app/actions/access-code
 
 interface Course { id: string; title: string }
 interface AccessCode {
-  id: string; code: string; course_id: string; is_used: boolean; created_at: string; expires_at: string | null
+  id: string; code: string; course_id: string; is_used: boolean; is_marked: boolean; created_at: string; expires_at: string | null
   course: { title: string } | null
   used_by_profile: { full_name: string; phone_number: string } | null
 }
@@ -20,6 +20,7 @@ export default function AccessCodesPage() {
   const [filterCourse, setFilterCourse] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const [genForm, setGenForm] = useState({ course_id: '', quantity: '1', expires_in_days: '' })
 
@@ -53,6 +54,18 @@ export default function AccessCodesPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  const toggleMarked = async (code: AccessCode) => {
+    setTogglingId(code.id)
+    await fetch('/api/admin/codes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: code.id, is_marked: !code.is_marked }),
+    })
+    // optimistic update
+    setCodes(prev => prev.map(c => c.id === code.id ? { ...c, is_marked: !c.is_marked } : c))
+    setTogglingId(null)
+  }
+
   const deleteCode = async (id: string) => {
     if (!confirm('حذف هذا الكود غير المستخدم؟')) return
     const result = await deleteAccessCode(id)
@@ -67,7 +80,9 @@ export default function AccessCodesPage() {
       filterStatus === 'all' ||
       (filterStatus === 'available' && !c.is_used && !isExpired) ||
       (filterStatus === 'used' && c.is_used) ||
-      (filterStatus === 'expired' && isExpired && !c.is_used)
+      (filterStatus === 'expired' && isExpired && !c.is_used) ||
+      (filterStatus === 'marked' && c.is_marked) ||
+      (filterStatus === 'unmarked' && !c.is_marked)
     return courseMatch && statusMatch
   })
 
@@ -110,6 +125,7 @@ export default function AccessCodesPage() {
           <div className="md:col-span-2">
             <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">الكورس *</label>
             <select value={genForm.course_id} onChange={e => setGenForm(p => ({ ...p, course_id: e.target.value }))}
+              suppressHydrationWarning
               className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none">
               <option value="">اختر كورس...</option>
               {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
@@ -119,16 +135,19 @@ export default function AccessCodesPage() {
             <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">الكمية (أقصى 100)</label>
             <input type="number" min="1" max="100" value={genForm.quantity}
               onChange={e => setGenForm(p => ({ ...p, quantity: e.target.value }))}
+              suppressHydrationWarning
               className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none" />
           </div>
           <div>
             <label className="block text-theme-secondary text-xs font-bold mb-1 uppercase tracking-wider">تنتهي خلال (أيام)</label>
             <input type="number" min="1" placeholder="لا تنتهي" value={genForm.expires_in_days}
               onChange={e => setGenForm(p => ({ ...p, expires_in_days: e.target.value }))}
+              suppressHydrationWarning
               className="w-full px-3 py-2.5 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none placeholder:text-theme-muted" />
           </div>
           <div className="md:col-span-4">
             <button type="submit" disabled={generating}
+              suppressHydrationWarning
               className="px-8 py-3 text-white font-bold rounded-lg transition-all disabled:opacity-50 shadow-lg" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
               {generating ? 'جاري التوليد...' : `توليد ${genForm.quantity || 1} كود`}
             </button>
@@ -139,16 +158,19 @@ export default function AccessCodesPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
         <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+          suppressHydrationWarning
           className="px-3 py-2 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-lg text-theme-primary text-sm outline-none focus:border-primary">
           <option value="all">كل الكورسات</option>
           {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          suppressHydrationWarning
           className="px-3 py-2 bg-[var(--bg-input)] border-2 border-[var(--border-color)] rounded-lg text-theme-primary text-sm outline-none focus:border-primary">
           <option value="all">كل الحالات</option>
           <option value="available">متاح</option>
-          <option value="used">مستخدم</option>
           <option value="expired">منتهي</option>
+          <option value="marked">✓ محدد</option>
+          <option value="unmarked">غير محدد</option>
         </select>
         <span className="px-3 py-2 text-theme-secondary text-sm">يظهر {filteredCodes.length} كود</span>
       </div>
@@ -159,6 +181,7 @@ export default function AccessCodesPage() {
           <table className="w-full">
             <thead style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
               <tr>
+                <th className="px-4 py-3 text-center text-white font-bold text-sm">✓</th>
                 <th className="px-6 py-3 text-right text-white font-bold text-sm">الكود</th>
                 <th className="px-6 py-3 text-right text-white font-bold text-sm">الكورس</th>
                 <th className="px-6 py-3 text-right text-white font-bold text-sm">الحالة</th>
@@ -170,14 +193,28 @@ export default function AccessCodesPage() {
             </thead>
             <tbody className="divide-y-2 divide-[var(--border-color)]">
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-theme-secondary animate-pulse">جاري التحميل...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-theme-secondary animate-pulse">جاري التحميل...</td></tr>
               ) : filteredCodes.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-theme-secondary">لا توجد أكواد</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-theme-secondary">لا توجد أكواد</td></tr>
               ) : filteredCodes.map(code => {
                 const isExpired = code.expires_at && new Date(code.expires_at) < new Date()
                 const status = code.is_used ? 'used' : isExpired ? 'expired' : 'available'
                 return (
                   <tr key={code.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => toggleMarked(code)}
+                        disabled={togglingId === code.id}
+                        title="تحديد/إلغاء تحديد الكود"
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center mx-auto transition-all ${
+                          code.is_marked
+                            ? 'bg-primary border-primary text-white'
+                            : 'border-[var(--border-color)] hover:border-primary'
+                        } ${togglingId === code.id ? 'opacity-40' : ''}`}
+                      >
+                        {code.is_marked && <span className="text-xs font-bold">✓</span>}
+                      </button>
+                    </td>
                     <td className="px-6 py-3">
                       <span className="font-mono text-theme-primary font-bold tracking-widest text-sm">{code.code}</span>
                     </td>

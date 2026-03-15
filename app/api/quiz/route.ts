@@ -15,20 +15,19 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient()
 
   if (getQuestions) {
-    // Return quiz info + questions (without correct answers)
     const { data: quiz, error: qErr } = await admin
       .from('quizzes')
       .select('id, title, module_id, modules(course_id)')
       .eq('id', quizId)
       .single()
     if (qErr || !quiz) return NextResponse.json({ error: 'Quiz not found' }, { status: 404 })
-    // Flatten course_id onto quiz object
     ;(quiz as any).course_id = (quiz as any).modules?.course_id ?? null
     delete (quiz as any).modules
 
     const { data: questions } = await admin
       .from('quiz_questions')
       .select('id, order_index, question_text, option_a, option_b, option_c, option_d')
+      // deliberately exclude "correct" and "solution" — returned only after submission
       .eq('quiz_id', quizId)
       .order('order_index')
 
@@ -57,16 +56,19 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Get questions with correct answers
+  // Get questions with correct answers AND solutions
   const { data: questions, error: qErr } = await admin
-    .from('quiz_questions').select('id, correct').eq('quiz_id', quizId)
+    .from('quiz_questions').select('id, correct, solution').eq('quiz_id', quizId)
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 })
 
   const total = questions?.length ?? 0
   let score = 0
   const correct: Record<string, string> = {}
+  const solutions: Record<string, string | null> = {}
+
   for (const q of questions ?? []) {
     correct[q.id] = q.correct
+    solutions[q.id] = q.solution ?? null
     if (answers[q.id] === q.correct) score++
   }
 
@@ -77,6 +79,6 @@ export async function POST(req: NextRequest) {
 
   if (subErr) return NextResponse.json({ error: subErr.message }, { status: 500 })
 
-  // Return score + correct answers so frontend can highlight them
-  return NextResponse.json({ score, total, correct })
+  // Return score + correct answers + solutions
+  return NextResponse.json({ score, total, correct, solutions })
 }

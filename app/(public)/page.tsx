@@ -134,12 +134,12 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: "🎬",
+                icon: "👨‍🎓",
                 title: "تعلم على أصوله",
                 desc: "منصة متكاملة فيها كل اللي تحتاجه، تتابع تقدمك بنفسك وتذاكر براحتك من غير أي تعقيد.",
               },
               {
-                icon: "📚",
+                icon: "🏆",
                 title: "اتحدَ نفسك",
                 desc: "تمارين واختبارات تفاعلية عشان تعرف مستواك وتطور نفسك خطوة بخطوة، ودايمًا بنوجهك للطريق الصح.",
               },
@@ -196,9 +196,8 @@ export default async function HomePage() {
               مين إحنا؟
             </h2>
             <p className="text-lg leading-relaxed text-theme-secondary">
-              إحنا منصة تعليمية متخصصة في اللغة العربية، مبنية حول فلسفة التدريس
-              المميزة للأستاذ أحمد بدوي. هدفنا إننا نوصّل تعليم عربي عالي الجودة
-              لكل طالب، سواء بيحضر في مراكزنا أو بيذاكر من البيت.
+              مع الاستاذ احمد بدوي الشرح البسيط مع الحل المتنوع ومن كل المصادر
+              وزي الامتحان ما بيقول
             </p>
           </div>
           <div className="text-center py-8 bg-theme-card rounded-2xl border-2 border-primary/20 px-8">

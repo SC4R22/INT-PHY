@@ -30,7 +30,7 @@ export async function GET() {
     admin
       .from('access_codes')
       .select(`
-        id, code, course_id, is_used, created_at, expires_at,
+        id, code, course_id, is_used, is_marked, created_at, expires_at,
         course:course_id (title),
         used_by_profile:used_by (full_name, phone_number)
       `)
@@ -42,4 +42,21 @@ export async function GET() {
     courses: coursesRes.data || [],
     codes: codesRes.data || [],
   })
+}
+
+export async function PATCH(req: Request) {
+  const user = await verifyAdmin()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id, is_marked } = await req.json()
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('access_codes')
+    .update({ is_marked })
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
 }

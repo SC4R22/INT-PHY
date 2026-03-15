@@ -1,12 +1,19 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
+const GRADES = [
+  { value: 'sec_1', label: 'ثانوي 1' },
+  { value: 'sec_2', label: 'ثانوي 2' },
+  { value: 'sec_3', label: 'ثانوي 3' },
+]
+
 export default function NewCoursePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -21,6 +28,14 @@ export default function NewCoursePage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [uploadingThumb, setUploadingThumb] = useState(false)
+
+  // Pre-select grade if coming from the grade section quick-add button
+  useEffect(() => {
+    const grade = searchParams.get('grade')
+    if (grade && GRADES.some(g => g.value === grade)) {
+      setForm(prev => ({ ...prev, target_grade: grade }))
+    }
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
@@ -175,7 +190,7 @@ export default function NewCoursePage() {
           <label className="block text-theme-secondary text-sm font-bold mb-2 uppercase tracking-wider">عنوان الكورس *</label>
           <input
             type="text" name="title" value={form.title} onChange={handleChange} required
-            placeholder="مثال: لغة عربية الصف الأول الثانوي"
+            placeholder="مثال: فيزياء الصف الأول الثانوي"
             className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none transition-colors placeholder:text-theme-muted"
           />
         </div>
@@ -213,14 +228,7 @@ export default function NewCoursePage() {
           <label className="block text-theme-secondary text-sm font-bold mb-4 uppercase tracking-wider">الصف المستهدف</label>
           <p className="text-theme-muted text-xs mb-4">فقط طلاب الصف المحدد يمكنهم رؤية هذا الكورس. اتركه فارغًا لإظهاره لكل الصفوف.</p>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'prep_1', label: 'إعدادي 1' },
-              { value: 'prep_2', label: 'إعدادي 2' },
-              { value: 'prep_3', label: 'إعدادي 3' },
-              { value: 'sec_1',  label: 'ثانوي 1' },
-              { value: 'sec_2',  label: 'ثانوي 2' },
-              { value: 'sec_3',  label: 'ثانوي 3' },
-            ].map((g) => (
+            {GRADES.map((g) => (
               <button key={g.value} type="button"
                 onClick={() => setForm(prev => ({ ...prev, target_grade: prev.target_grade === g.value ? '' : g.value }))}
                 className={`py-3 rounded-lg font-bold text-sm border-2 transition-all ${
@@ -247,9 +255,7 @@ export default function NewCoursePage() {
               {form.published ? 'منشور — مرئي للطلاب' : 'مسودة — مخفي عن الطلاب'}
             </span>
             <button
-              type="button"
-              role="switch"
-              aria-checked={form.published}
+              type="button" role="switch" aria-checked={form.published}
               onClick={() => setForm(prev => ({ ...prev, published: !prev.published }))}
               className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${form.published ? 'bg-green-600' : 'bg-[var(--border-color)]'}`}
               dir="ltr"

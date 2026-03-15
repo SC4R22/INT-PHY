@@ -31,6 +31,7 @@ export function AdminSidebar() {
       <NavLink href="/admin/students" icon="👥" onClick={close}>الطلاب</NavLink>
       <NavLink href="/admin/users" icon="⚙️" onClick={close}>إدارة المستخدمين</NavLink>
       <NavLink href="/admin/codes" icon="🎟️" onClick={close}>أكواد الدخول</NavLink>
+      <NavLink href="/admin/standalone-exams" icon="📋" onClick={close}>الامتحانات المستقلة</NavLink>
     </nav>
   )
 
@@ -83,7 +84,8 @@ export function AdminSidebar() {
           <ThemeToggle />
           <button onClick={() => setOpen(!open)}
             className="p-2 rounded-lg text-theme-secondary hover:text-theme-primary hover:bg-[var(--bg-card-alt)] transition-all"
-            aria-label="تبديل القائمة">
+            aria-label="تبديل القائمة"
+            suppressHydrationWarning>
             {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>

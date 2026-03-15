@@ -1,0 +1,22 @@
+  useEffect(() => {
+    if (!courseId) return
+    fetch(`/api/admin/courses/${courseId}/stats`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { setError(data.error); return }
+        setCourse(data.course)
+        setEnrollments(data.enrollments || [])
+        setModules((data.modules || []).map((m: any) => ({
+          ...m,
+          videos: m.videos || [],
+          quizzes: m.quizzes || [],
+          exam: m.exam || null,
+        })))
+        setQuizSubs(data.quizSubmissions || [])
+        setExamSubs(data.examSubmissions || [])
+        setUserProgress(data.userProgress || [])
+        setExpandedModules(new Set((data.modules || []).map((m: any) => m.id)))
+      })
+      .catch(() => setError('فشل تحميل الإحصائيات'))
+      .finally(() => setLoading(false))
+  }, [courseId])
