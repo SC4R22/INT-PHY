@@ -154,7 +154,8 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
       setDuration(dur)
       onTimeUpdate?.(ct, dur)
     }, 500)
-  }, [onTimeUpdate, stopTicker])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onTimeUpdate])
 
   useEffect(() => {
     const onFS = () => setIsFullscreen(!!document.fullscreenElement)

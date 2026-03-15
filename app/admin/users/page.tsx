@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface User {
@@ -23,7 +23,12 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [passwordModal, setPasswordModal] = useState<{ userId: string; name: string } | null>(null)
   const [newPassword, setNewPassword] = useState('')
@@ -38,26 +43,36 @@ export default function UsersPage() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (p = page, q = search) => {
     setLoading(true)
-    const res = await fetch('/api/admin/users')
+    const params = new URLSearchParams({ page: String(p) })
+    if (q) params.set('search', q)
+    const res = await fetch(`/api/admin/users?${params}`)
     const data = await res.json()
     setUsers(data.users || [])
+    setTotal(data.total ?? 0)
+    setTotalPages(data.totalPages ?? 0)
     setLoading(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search])
+
+  useEffect(() => { fetchUsers(page, search) }, [page, search]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSearchChange = (val: string) => {
+    setSearchInput(val)
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    searchTimeout.current = setTimeout(() => {
+      setSearch(val)
+      setPage(0)
+    }, 350)
   }
 
-  useEffect(() => { fetchUsers() }, [])
-
-  const filtered = users.filter(u => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return u.phone_number?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q)
-  })
+  const filtered = users // server already filtered
 
   const roleCounts = {
-    student: users.filter(u => u.role === 'student').length,
-    teacher: users.filter(u => u.role === 'teacher').length,
-    admin: users.filter(u => u.role === 'admin').length,
+    student: 0,
+    teacher: 0,
+    admin: 0,
   }
 
   const handleBan = async (userId: string, ban: boolean, name: string) => {
@@ -71,7 +86,7 @@ export default function UsersPage() {
     setActionLoading(null)
     if (data.success) {
       showToast('success', ban ? `تم حظر ${name}.` : `تم رفع الحظر عن ${name}.`)
-      fetchUsers()
+      fetchUsers(page, search)
     } else {
       showToast('error', data.error || 'فشل الإجراء')
     }
@@ -90,7 +105,7 @@ export default function UsersPage() {
     setDeleteModal(null)
     if (data.success) {
       showToast('success', `تم حذف حساب ${deleteModal.name}.`)
-      fetchUsers()
+      fetchUsers(page, search)
     } else {
       showToast('error', data.error || 'فشل الحذف')
     }
@@ -110,6 +125,7 @@ export default function UsersPage() {
     if (data.success) {
       setPasswordMsg({ type: 'success', text: `تم تحديث كلمة السر! كلمة السر الجديدة: ${newPassword}` })
       setNewPassword('')
+      fetchUsers(page, search)
     } else {
       setPasswordMsg({ type: 'error', text: data.error || 'فشل تحديث كلمة السر' })
     }
@@ -135,17 +151,17 @@ export default function UsersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
-        <div className="bg-theme-card rounded-lg p-4 border-l-4 border-primary">
-          <p className="text-theme-secondary text-sm">طلاب</p>
-          <p className="text-3xl font-bold text-theme-primary">{roleCounts.student}</p>
+        <div className="bg-theme-card rounded-lg p-4 border-l-4 border-primary col-span-3 md:col-span-1">
+          <p className="text-theme-secondary text-sm">إجمالي المستخدمين</p>
+          <p className="text-3xl font-bold text-theme-primary">{total}</p>
         </div>
         <div className="bg-theme-card rounded-lg p-4 border-l-4 border-primary">
-          <p className="text-theme-secondary text-sm">مدرسين</p>
-          <p className="text-3xl font-bold text-theme-primary">{roleCounts.teacher}</p>
+          <p className="text-theme-secondary text-sm">صفحة</p>
+          <p className="text-3xl font-bold text-theme-primary">{page + 1} / {Math.max(1, totalPages)}</p>
         </div>
         <div className="bg-theme-card rounded-lg p-4 border-l-4 border-yellow-500">
-          <p className="text-theme-secondary text-sm">أدمنز</p>
-          <p className="text-3xl font-bold text-theme-primary">{roleCounts.admin}</p>
+          <p className="text-theme-secondary text-sm">في هذه الصفحة</p>
+          <p className="text-3xl font-bold text-theme-primary">{users.length}</p>
         </div>
       </div>
 
@@ -154,18 +170,53 @@ export default function UsersPage() {
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-secondary">🔍</span>
         <input
           type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="ابحث بالاسم أو رقم الهاتف..."
+          value={searchInput}
+          onChange={e => handleSearchChange(e.target.value)}
+          placeholder="ابحث بالاسم أو رقم الهاتف... (بحث تلقائي من السيرفر)"
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-xl text-theme-primary outline-none placeholder:text-theme-muted transition-colors"
         />
-        {search && (
-          <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-theme-primary">✕</button>
+        {searchInput && (
+          <button onClick={() => { setSearchInput(''); setSearch(''); setPage(0) }} className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-secondary hover:text-theme-primary">✕</button>
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3 mb-4">
+        {loading ? (
+          <p className="text-center text-theme-secondary py-8 animate-pulse">جاري التحميل...</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-theme-secondary py-8">{search ? `لا نتائج لـ "${search}"` : 'لا يوجد مستخدمين'}</p>
+        ) : filtered.map((user) => (
+          <div key={user.id}
+            onClick={() => router.push(`/admin/users/${user.id}`)}
+            className={`bg-theme-card rounded-xl border border-[var(--border-color)] p-4 cursor-pointer active:bg-[var(--bg-card-alt)] ${user.is_banned ? 'opacity-60' : ''}`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">{user.full_name?.charAt(0).toUpperCase()}</div>
+                <span className="text-theme-primary font-bold truncate">{user.full_name}</span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${roleColor[user.role] || 'bg-gray-500/20 text-gray-500'}`}>{user.role}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${user.is_banned ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-green-500/20 text-green-700 dark:text-green-400'}`}>{user.is_banned ? 'محظور' : 'نشيط'}</span>
+              </div>
+            </div>
+            <p className="text-theme-secondary text-sm font-mono mb-3">{user.phone_number}</p>
+            <div className="flex gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
+              <button onClick={() => handleBan(user.id, !user.is_banned, user.full_name)} disabled={actionLoading === user.id + '-ban'}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
+                  user.is_banned ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30' : 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30'
+                }`}>{actionLoading === user.id + '-ban' ? '...' : user.is_banned ? '✓ رفع الحظر' : '⛘ حظر'}</button>
+              <button onClick={() => { setPasswordModal({ userId: user.id, name: user.full_name }); setNewPassword(''); setPasswordMsg(null) }}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg text-white" style={{ background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' }}>🔑 كلمة السر</button>
+              <button onClick={() => setDeleteModal({ userId: user.id, name: user.full_name })}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30">🗑 حذف</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
@@ -251,10 +302,47 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {search && (
-        <p className="text-theme-secondary text-sm mt-3">
-          يظهر {filtered.length} من {users.length} مستخدم
-        </p>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+          <p className="text-theme-secondary text-sm">
+            يظهر {users.length} من إجمالي {total} مستخدم
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
+              className="px-4 py-2 bg-theme-card border border-[var(--border-color)] rounded-lg text-theme-primary text-sm font-bold disabled:opacity-40 hover:border-primary transition-colors"
+            >
+              ← سابق
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(0, Math.min(page - 2, totalPages - 5))
+              const p = start + i
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-9 h-9 rounded-lg text-sm font-bold transition-colors ${
+                    p === page
+                      ? 'text-white'
+                      : 'bg-theme-card border border-[var(--border-color)] text-theme-secondary hover:border-primary'
+                  }`}
+                  style={p === page ? { background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' } : undefined}
+                >
+                  {p + 1}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1 || loading}
+              className="px-4 py-2 bg-theme-card border border-[var(--border-color)] rounded-lg text-theme-primary text-sm font-bold disabled:opacity-40 hover:border-primary transition-colors"
+            >
+              تالي →
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Password Modal */}

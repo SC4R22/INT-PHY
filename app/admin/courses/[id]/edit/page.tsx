@@ -144,7 +144,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   if (loading) return <div className="p-8 text-theme-secondary animate-pulse">جاري التحميل...</div>
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
       <div className="mb-8">
         <button suppressHydrationWarning onClick={() => router.push(`/admin/courses/${id}/content`)}
           className="text-theme-secondary hover:text-theme-primary flex items-center gap-2 mb-4 transition-colors">

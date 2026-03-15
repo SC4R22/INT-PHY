@@ -54,6 +54,42 @@ function CourseRow({ course }: { course: any }) {
   )
 }
 
+function CourseMobileCard({ course }: { course: any }) {
+  return (
+    <div className="bg-[var(--bg-card-alt)] border-b border-[var(--border-color)] p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <p className="text-theme-primary font-semibold truncate">{course.title}</p>
+          <p className="text-theme-secondary text-xs line-clamp-1 mt-0.5">{course.description}</p>
+        </div>
+        <div className="flex gap-1.5 flex-shrink-0">
+          {course.published
+            ? <span className="px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-bold rounded-full border border-green-500/30">منشور</span>
+            : <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 text-xs font-bold rounded-full border border-yellow-500/30">مسودة</span>}
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-theme-secondary text-xs">{course.is_free ? 'مجاني' : `${course.price_cash} جنيه`}</span>
+        <div className="flex gap-1.5">
+          <Link href={`/admin/courses/${course.id}/stats`}
+            className="px-2.5 py-1 bg-purple-500/20 text-purple-700 dark:text-purple-400 text-xs font-bold rounded">
+            📊
+          </Link>
+          <Link href={`/admin/courses/${course.id}/edit`}
+            className="px-2.5 py-1 text-white text-xs font-bold rounded"
+            style={{ background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' }}>
+            تعديل
+          </Link>
+          <Link href={`/admin/courses/${course.id}/content`}
+            className="px-2.5 py-1 bg-primary text-white text-xs font-bold rounded">
+            محتوى
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -164,16 +200,25 @@ export default function AdminCoursesPage() {
                 {/* Collapsible body */}
                 {!isCollapsed && (
                   sectionCourses.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        {tableHead}
-                        <tbody className="divide-y divide-[var(--border-color)]">
-                          {sectionCourses.map(course => (
-                            <CourseRow key={course.id} course={course} />
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <>
+                      {/* Mobile cards */}
+                      <div className="md:hidden divide-y divide-[var(--border-color)]">
+                        {sectionCourses.map(course => (
+                          <CourseMobileCard key={course.id} course={course} />
+                        ))}
+                      </div>
+                      {/* Desktop table */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full">
+                          {tableHead}
+                          <tbody className="divide-y divide-[var(--border-color)]">
+                            {sectionCourses.map(course => (
+                              <CourseRow key={course.id} course={course} />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   ) : (
                     <div className="px-6 py-8 text-center">
                       <p className="text-theme-muted text-sm mb-3">لا توجد كورسات لـ {section.label} بعد</p>

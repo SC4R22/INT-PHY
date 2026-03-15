@@ -127,7 +127,7 @@ export default function NewCoursePage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
       <div className="mb-8">
         <button suppressHydrationWarning onClick={() => router.push('/admin/courses')}
           className="text-theme-secondary hover:text-theme-primary flex items-center gap-2 mb-4 transition-colors">

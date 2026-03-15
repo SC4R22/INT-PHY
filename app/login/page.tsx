@@ -45,7 +45,7 @@ function LoginContent() {
         <h1 suppressHydrationWarning className="text-5xl md:text-7xl font-black text-white uppercase italic tracking-tighter drop-shadow-lg font-payback">اهلا بيك يا فنان !</h1>
       </div>
 
-      <div className="max-w-3xl mx-auto mt-6 md:mt-8 bg-theme-card rounded-xl overflow-hidden shadow-2xl mb-8 mx-4 md:mx-auto">
+      <div className="max-w-3xl mx-4 md:mx-auto mt-6 md:mt-8 bg-theme-card rounded-xl overflow-hidden shadow-2xl mb-8">
         {/* Tab bar with gradient bottom border */}
         <div suppressHydrationWarning className="flex" style={{ borderBottom: '4px solid transparent', borderImage: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%) 1' }}>
           <a href="/signup"

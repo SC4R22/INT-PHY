@@ -8,10 +8,12 @@ export default async function StudentsPage() {
     .select('id, full_name, phone_number, parent_name, parent_phone_number, created_at, is_banned')
     .eq('role', 'student')
     .order('created_at', { ascending: false })
+    .limit(500)
 
   const { data: enrollmentCounts } = await admin
     .from('enrollments')
     .select('user_id')
+    .limit(5000)
 
   const countMap: Record<string, number> = {}
   for (const row of enrollmentCounts ?? []) {
@@ -45,8 +47,28 @@ export default async function StudentsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
+      {/* Mobile cards (< md) */}
+      <div className="md:hidden space-y-3">
+        {students && students.length > 0 ? students.map((student: any) => (
+          <div key={student.id} className="bg-theme-card rounded-xl border border-[var(--border-color)] p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-theme-primary font-bold truncate">{student.full_name}</p>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ml-2 ${
+                student.is_banned ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-green-500/20 text-green-700 dark:text-green-400'
+              }`}>{student.is_banned ? 'محظور' : 'نشيط'}</span>
+            </div>
+            <p className="text-theme-secondary text-sm font-mono mb-1">{student.phone_number}</p>
+            {student.parent_name && <p className="text-theme-muted text-xs mb-1">ولي الأمر: {student.parent_name} • {student.parent_phone_number}</p>}
+            <div className="flex items-center justify-between mt-2">
+              <span className="px-2 py-1 bg-primary/20 text-primary text-xs font-bold rounded">{countMap[student.id] || 0} كورس</span>
+              <span className="text-theme-muted text-xs">{new Date(student.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        )) : <p className="text-center text-theme-secondary py-12">لا يوجد طلاب بعد</p>}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
@@ -62,9 +84,7 @@ export default async function StudentsPage() {
             <tbody className="divide-y-2 divide-[var(--border-color)]">
               {students && students.length > 0 ? students.map((student: any) => (
                 <tr key={student.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="text-theme-primary font-semibold">{student.full_name}</p>
-                  </td>
+                  <td className="px-6 py-4"><p className="text-theme-primary font-semibold">{student.full_name}</p></td>
                   <td className="px-6 py-4 text-theme-secondary font-mono text-sm">{student.phone_number}</td>
                   <td className="px-6 py-4">
                     {student.parent_name ? (
@@ -74,28 +94,16 @@ export default async function StudentsPage() {
                       </div>
                     ) : <span className="text-theme-muted text-sm">—</span>}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-primary/20 text-primary text-sm font-bold rounded">
-                      {countMap[student.id] || 0} كورس
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-theme-secondary text-sm">
-                    {new Date(student.created_at).toLocaleDateString()}
-                  </td>
+                  <td className="px-6 py-4"><span className="px-2 py-1 bg-primary/20 text-primary text-sm font-bold rounded">{countMap[student.id] || 0} كورس</span></td>
+                  <td className="px-6 py-4 text-theme-secondary text-sm">{new Date(student.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                      student.is_banned
-                        ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                        : 'bg-green-500/20 text-green-700 dark:text-green-400'
-                    }`}>
-                      {student.is_banned ? 'محظور' : 'نشيط'}
-                    </span>
+                      student.is_banned ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-green-500/20 text-green-700 dark:text-green-400'
+                    }`}>{student.is_banned ? 'محظور' : 'نشيط'}</span>
                   </td>
                 </tr>
               )) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-theme-secondary">لا يوجد طلاب بعد</td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-12 text-center text-theme-secondary">لا يوجد طلاب بعد</td></tr>
               )}
             </tbody>
           </table>

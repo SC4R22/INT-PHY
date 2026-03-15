@@ -32,7 +32,7 @@ export async function GET(
   if (courseError || !course)
     return NextResponse.json({ error: 'Course not found' }, { status: 404 })
 
-  // 2. All enrollments for this course with user profiles
+  // 2. All enrollments for this course with user profiles (capped at 2000 for safety)
   const { data: enrollments } = await admin
     .from('enrollments')
     .select(`
@@ -50,6 +50,7 @@ export async function GET(
     `)
     .eq('course_id', courseId)
     .order('enrolled_at', { ascending: false })
+    .limit(2000)
 
   // 3. Full course structure: modules → videos + quizzes + exams
   const { data: modulesRaw } = await admin
@@ -114,6 +115,7 @@ export async function GET(
       .from('quiz_submissions')
       .select('id, user_id, quiz_id, score, total, submitted_at')
       .in('quiz_id', quizIds)
+      .limit(5000)
     quizSubmissions = data || []
   }
 
@@ -124,6 +126,7 @@ export async function GET(
       .from('module_exam_submissions')
       .select('id, user_id, exam_id, score, total, submitted_at')
       .in('exam_id', examIds)
+      .limit(5000)
     examSubmissions = data || []
   }
 
@@ -135,6 +138,7 @@ export async function GET(
       .from('user_progress')
       .select('user_id, video_id, completed')
       .in('video_id', allVideoIds)
+      .limit(10000)
     userProgress = data || []
   }
 

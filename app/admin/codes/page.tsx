@@ -175,8 +175,58 @@ export default function AccessCodesPage() {
         <span className="px-3 py-2 text-theme-secondary text-sm">يظهر {filteredCodes.length} كود</span>
       </div>
 
-      {/* Codes table */}
-      <div className="bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <p className="text-center text-theme-secondary py-8 animate-pulse">جاري التحميل...</p>
+        ) : filteredCodes.length === 0 ? (
+          <p className="text-center text-theme-secondary py-8">لا توجد أكواد</p>
+        ) : filteredCodes.map(code => {
+          const isExpired = code.expires_at && new Date(code.expires_at) < new Date()
+          const status = code.is_used ? 'used' : isExpired ? 'expired' : 'available'
+          return (
+            <div key={code.id} className="bg-theme-card rounded-xl border border-[var(--border-color)] p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggleMarked(code)} disabled={togglingId === code.id}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      code.is_marked ? 'bg-primary border-primary text-white' : 'border-[var(--border-color)]'
+                    }`}>
+                    {code.is_marked && <span className="text-xs font-bold">✓</span>}
+                  </button>
+                  <span className="font-mono text-theme-primary font-bold tracking-widest text-sm">{code.code}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ${
+                  status === 'available' ? 'bg-green-500/20 text-green-700 dark:text-green-400' :
+                  status === 'used' ? 'bg-primary/20 text-primary' : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                }`}>{status === 'available' ? 'متاح' : status === 'used' ? 'مستخدم' : 'منتهي'}</span>
+              </div>
+              <p className="text-theme-secondary text-xs mb-1">{code.course?.title || '—'}</p>
+              {code.used_by_profile && <p className="text-theme-muted text-xs mb-1">استخدمه: {code.used_by_profile.full_name}</p>}
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-theme-muted text-xs">{code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'لا تنتهي'}</span>
+                <div className="flex gap-2">
+                  {!code.is_used && (
+                    <button onClick={() => copyCode(code.code, code.id)}
+                      className="px-3 py-1 bg-primary/20 text-primary text-xs font-bold rounded">
+                      {copiedId === code.id ? '✓ تم' : 'نسخ'}
+                    </button>
+                  )}
+                  {!code.is_used && (
+                    <button onClick={() => deleteCode(code.id)}
+                      className="px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold rounded">
+                      حذف
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-theme-card rounded-xl overflow-hidden border border-[var(--border-color)]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
@@ -202,41 +252,25 @@ export default function AccessCodesPage() {
                 return (
                   <tr key={code.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
                     <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => toggleMarked(code)}
-                        disabled={togglingId === code.id}
+                      <button onClick={() => toggleMarked(code)} disabled={togglingId === code.id}
                         title="تحديد/إلغاء تحديد الكود"
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center mx-auto transition-all ${
-                          code.is_marked
-                            ? 'bg-primary border-primary text-white'
-                            : 'border-[var(--border-color)] hover:border-primary'
-                        } ${togglingId === code.id ? 'opacity-40' : ''}`}
-                      >
+                          code.is_marked ? 'bg-primary border-primary text-white' : 'border-[var(--border-color)] hover:border-primary'
+                        } ${togglingId === code.id ? 'opacity-40' : ''}`}>
                         {code.is_marked && <span className="text-xs font-bold">✓</span>}
                       </button>
                     </td>
-                    <td className="px-6 py-3">
-                      <span className="font-mono text-theme-primary font-bold tracking-widest text-sm">{code.code}</span>
-                    </td>
+                    <td className="px-6 py-3"><span className="font-mono text-theme-primary font-bold tracking-widest text-sm">{code.code}</span></td>
                     <td className="px-6 py-3 text-theme-secondary text-sm">{code.course?.title || '—'}</td>
                     <td className="px-6 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                         status === 'available' ? 'bg-green-500/20 text-green-700 dark:text-green-400' :
-                        status === 'used' ? 'bg-primary/20 text-primary' :
-                        'bg-red-500/20 text-red-600 dark:text-red-400'
-                      }`}>
-                        {status === 'available' ? 'متاح' : status === 'used' ? 'مستخدم' : 'منتهي'}
-                      </span>
+                        status === 'used' ? 'bg-primary/20 text-primary' : 'bg-red-500/20 text-red-600 dark:text-red-400'
+                      }`}>{status === 'available' ? 'متاح' : status === 'used' ? 'مستخدم' : 'منتهي'}</span>
                     </td>
-                    <td className="px-6 py-3 text-theme-secondary text-sm">
-                      {code.used_by_profile ? `${code.used_by_profile.full_name} (${code.used_by_profile.phone_number})` : '—'}
-                    </td>
-                    <td className="px-6 py-3 text-theme-secondary text-sm">
-                      {code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'لا تنتهي'}
-                    </td>
-                    <td className="px-6 py-3 text-theme-secondary text-sm">
-                      {new Date(code.created_at).toLocaleDateString()}
-                    </td>
+                    <td className="px-6 py-3 text-theme-secondary text-sm">{code.used_by_profile ? `${code.used_by_profile.full_name} (${code.used_by_profile.phone_number})` : '—'}</td>
+                    <td className="px-6 py-3 text-theme-secondary text-sm">{code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'لا تنتهي'}</td>
+                    <td className="px-6 py-3 text-theme-secondary text-sm">{new Date(code.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-3">
                       <div className="flex justify-end gap-2">
                         {!code.is_used && (
@@ -247,9 +281,7 @@ export default function AccessCodesPage() {
                         )}
                         {!code.is_used && (
                           <button onClick={() => deleteCode(code.id)}
-                            className="px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold rounded hover:bg-red-500/30 transition-colors">
-                            حذف
-                          </button>
+                            className="px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold rounded hover:bg-red-500/30 transition-colors">حذف</button>
                         )}
                       </div>
                     </td>

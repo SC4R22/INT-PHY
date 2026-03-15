@@ -282,15 +282,15 @@ export default function CourseStatsPage() {
       </div>
 
       {/* Two-panel layout */}
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
 
         {/* LEFT PANEL — Course Structure */}
-        <div className="w-72 flex-shrink-0 bg-theme-card rounded-2xl border border-[var(--border-color)] overflow-hidden sticky top-4">
+        <div className="w-full lg:w-72 lg:flex-shrink-0 bg-theme-card rounded-2xl border border-[var(--border-color)] overflow-hidden lg:sticky lg:top-4">
           <div className="px-4 py-3 border-b border-[var(--border-color)]" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
             <p className="text-white font-black text-sm">هيكل الكورس</p>
             <p className="text-white/70 text-xs">{modules.length} وحدة</p>
           </div>
-          <div className="overflow-y-auto max-h-[70vh]">
+          <div className="overflow-y-auto max-h-[40vh] lg:max-h-[70vh]">
             {modules.length === 0 ? (
               <p className="p-4 text-theme-muted text-sm text-center">لا يوجد محتوى</p>
             ) : modules.map(mod => {
@@ -405,8 +405,7 @@ export default function CourseStatsPage() {
                     <h2 className="text-theme-primary font-black text-base">{selectedLabel}</h2>
                   </div>
                   <p className="text-theme-secondary text-xs mt-0.5">
-                    {selectedItem.kind === 'module' ? selectedItem.module.title
-                    : selectedItem.kind !== 'module' ? `وحدة: ${selectedItem.module.title}` : ''}
+                    {selectedItem.kind !== 'module' ? `وحدة: ${selectedItem.module.title}` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">

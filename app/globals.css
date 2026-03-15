@@ -45,6 +45,7 @@
     /* Tajawal Regular - body text */
     font-family: var(--font-tajawal), sans-serif;
     font-weight: 400;
+    overflow-x: hidden;
     @apply transition-colors duration-200;
   }
 
