@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
 
 const GRADES = [
   { value: 'sec_1', label: 'ثانوي 1' },
@@ -14,7 +13,6 @@ const GRADES = [
 export default function NewCoursePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -24,12 +22,9 @@ export default function NewCoursePage() {
     is_free: false,
     published: false,
     target_grade: '',
+    thumbnail_url: '',
   })
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
-  const [uploadingThumb, setUploadingThumb] = useState(false)
 
-  // Pre-select grade if coming from the grade section quick-add button
   useEffect(() => {
     const grade = searchParams.get('grade')
     if (grade && GRADES.some(g => g.value === grade)) {
@@ -43,40 +38,6 @@ export default function NewCoursePage() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }))
-  }
-
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setError('الصورة يجب أن تكون أقل من 5 ميجابايت'); return }
-    setThumbnailFile(file)
-    setThumbnailPreview(URL.createObjectURL(file))
-    setError(null)
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (!file || !file.type.startsWith('image/')) return
-    if (file.size > 5 * 1024 * 1024) { setError('الصورة يجب أن تكون أقل من 5 ميجابايت'); return }
-    setThumbnailFile(file)
-    setThumbnailPreview(URL.createObjectURL(file))
-    setError(null)
-  }
-
-  const uploadThumbnail = async (courseId: string): Promise<string | null> => {
-    if (!thumbnailFile) return null
-    setUploadingThumb(true)
-    const supabase = createClient()
-    const ext = thumbnailFile.name.split('.').pop()
-    const path = `${courseId}/thumbnail.${ext}`
-    const { error: upErr } = await supabase.storage
-      .from('course-thumbnails')
-      .upload(path, thumbnailFile, { upsert: true, contentType: thumbnailFile.type })
-    setUploadingThumb(false)
-    if (upErr) { setError('فشل رفع الصورة: ' + upErr.message); return null }
-    const { data } = supabase.storage.from('course-thumbnails').getPublicUrl(path)
-    return data.publicUrl
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,31 +56,13 @@ export default function NewCoursePage() {
           is_free: form.is_free,
           published: form.published,
           target_grade: form.target_grade || null,
+          thumbnail_url: form.thumbnail_url || null,
         }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.error || 'فشل إنشاء الكورس'); setLoading(false); return }
 
-      const courseId = json.course.id
-
-      if (thumbnailFile) {
-        const thumbUrl = await uploadThumbnail(courseId)
-        if (!thumbUrl) { setLoading(false); return }
-        await fetch(`/api/admin/courses/${courseId}/details`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: form.title,
-            description: form.description,
-            price_cash: form.is_free ? 0 : parseFloat(form.price_cash) || 0,
-            is_free: form.is_free,
-            published: form.published,
-            thumbnail_url: thumbUrl,
-          }),
-        })
-      }
-
-      router.push(`/admin/courses/${courseId}/content`)
+      router.push(`/admin/courses/${json.course.id}/content`)
     } catch (err: any) {
       setError(err.message || 'حدث خطأ ما')
       setLoading(false)
@@ -143,47 +86,29 @@ export default function NewCoursePage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Thumbnail Upload */}
+        {/* Thumbnail URL */}
         <div className="bg-theme-card rounded-xl p-6 border border-[var(--border-color)]">
-          <label className="block text-theme-secondary text-sm font-bold mb-4 uppercase tracking-wider">صورة الكورس</label>
-          <div
-            className="relative rounded-xl border-2 border-dashed transition-colors cursor-pointer overflow-hidden border-[var(--border-color)] hover:border-primary"
-            style={{ aspectRatio: '16/9' }}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            {thumbnailPreview ? (
-              <>
-                <Image src={thumbnailPreview} alt="Thumbnail preview" fill className="object-cover" unoptimized />
-                <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">اضغط للتغيير</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setThumbnailFile(null); setThumbnailPreview(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors"
-                >
-                  ✕
-                </button>
-              </>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-theme-secondary">
-                <div className="w-14 h-14 rounded-full bg-[var(--bg-card-alt)] flex items-center justify-center text-2xl">🖼️</div>
-                <div className="text-center">
-                  <p className="font-semibold text-sm">اضغط أو اسحب وأفلت لرفع الصورة</p>
-                  <p className="text-xs text-theme-muted mt-1">JPG, PNG, WebP · الحد الأقصى 5MB · 16:9 مفضل</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <label className="block text-theme-secondary text-sm font-bold mb-2 uppercase tracking-wider">صورة الكورس (رابط)</label>
           <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            onChange={handleThumbnailChange}
-            className="hidden"
+            type="text"
+            name="thumbnail_url"
+            value={form.thumbnail_url}
+            onChange={handleChange}
+            placeholder="https://..."
+            className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none transition-colors placeholder:text-theme-muted"
           />
+          {form.thumbnail_url && (
+            <div className="mt-4 relative rounded-xl overflow-hidden border border-[var(--border-color)]" style={{ aspectRatio: '16/9' }}>
+              <Image
+                src={form.thumbnail_url}
+                alt="Thumbnail preview"
+                fill
+                className="object-cover"
+                unoptimized
+                onError={() => {}}
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-theme-card rounded-xl p-6 border border-[var(--border-color)]">
@@ -270,9 +195,9 @@ export default function NewCoursePage() {
             className="px-6 py-4 bg-[var(--bg-card-alt)] hover:bg-[var(--border-color)] text-theme-primary rounded-lg font-bold transition-all border border-[var(--border-color)]">
             إلغاء
           </button>
-          <button type="submit" disabled={loading || uploadingThumb} suppressHydrationWarning
+          <button type="submit" disabled={loading} suppressHydrationWarning
             className="flex-1 py-4 text-white rounded-lg font-bold text-lg transition-all disabled:opacity-50 shadow-lg" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}>
-            {uploadingThumb ? 'جاري رفع الصورة...' : loading ? 'جاري الإنشاء...' : '← إنشاء الكورس وإضافة المحتوى'}
+            {loading ? 'جاري الإنشاء...' : '← إنشاء الكورس وإضافة المحتوى'}
           </button>
         </div>
       </form>

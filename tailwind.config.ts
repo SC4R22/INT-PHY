@@ -47,6 +47,17 @@ const config: Config = {
         'brand-gradient': 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)',
         'brand-gradient-diagonal': 'linear-gradient(135deg, #FD1D1D 0%, #FCB045 100%)',
       },
+      keyframes: {
+        // Used for double-tap flash indicators on mobile
+        'ping-once': {
+          '0%':   { opacity: '1',   transform: 'scale(1)' },
+          '50%':  { opacity: '0.7', transform: 'scale(1.15)' },
+          '100%': { opacity: '0',   transform: 'scale(0.9)' },
+        },
+      },
+      animation: {
+        'ping-once': 'ping-once 0.6s ease-out forwards',
+      },
     },
   },
   plugins: [],

@@ -126,8 +126,8 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
   return (
     <div className="min-h-screen bg-theme-primary">
       {/* Header */}
-      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)] sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)] py-4">
+        <div className="max-w-3xl mx-auto px-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => {
@@ -144,7 +144,7 @@ export default function QuizPage({ params, searchParams }: { params: Promise<{ q
             <span className="text-theme-secondary text-sm flex-shrink-0 whitespace-nowrap">{answeredCount}/{questions.length}</span>
           )}
         </div>
-      </header>
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
 

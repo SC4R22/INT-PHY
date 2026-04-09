@@ -97,10 +97,37 @@ export async function GET(
     .eq('user_id', userId)
     .order('submitted_at', { ascending: false })
 
+  // 5. Video watch progress
+  const { data: videoProgress } = await admin
+    .from('user_progress')
+    .select(`
+      video_id,
+      last_position,
+      completed,
+      last_watched_at,
+      videos:video_id (
+        id,
+        title,
+        duration,
+        order_index,
+        modules:module_id (
+          id,
+          title,
+          courses:course_id (
+            id,
+            title
+          )
+        )
+      )
+    `)
+    .eq('user_id', userId)
+    .order('last_watched_at', { ascending: false })
+
   return NextResponse.json({
     profile,
     enrollments: enrollments || [],
     quizSubmissions: quizSubmissions || [],
     examSubmissions: examSubmissions || [],
+    videoProgress: videoProgress || [],
   })
 }

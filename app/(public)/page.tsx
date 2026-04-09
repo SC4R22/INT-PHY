@@ -171,7 +171,7 @@ export default async function HomePage() {
             المراكز المتاحة
           </h2>
           <div className="flex flex-wrap justify-center gap-6">
-            {["حدائق اكتوبر", "اكتوبر", "الشيخ زايد"].map((center) => (
+            {[, "حدائق اكتوبر", "اكتوبر", "الشيخ زايد"].map((center) => (
               <div
                 key={center}
                 className="text-white px-12 py-5 rounded-full text-xl lg:text-2xl font-bold font-payback hover:scale-105 transition-all cursor-default"

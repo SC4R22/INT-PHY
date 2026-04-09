@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { VideoPlayer } from './video-player'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { CollapsibleModuleList } from '@/components/collapsible-module-list'
 
 export default async function WatchPage({
@@ -106,29 +104,20 @@ export default async function WatchPage({
   const progressObj = Object.fromEntries(progressMap)
   const lockedArr = [...sidebarLockedVideoIds]
 
+  // Build the sidebar JSX here so we can pass it to VideoPlayer for mobile placement
+  const sidebarContent = (
+    <CollapsibleModuleList
+      modules={modules ?? []}
+      videoId={videoId}
+      progressMap={progressObj}
+      lockedIds={lockedArr}
+    />
+  )
+
   return (
     <div className="min-h-screen bg-theme-primary flex flex-col">
 
-      {/* ── Header ── */}
-      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)] flex-shrink-0">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-3 flex items-center gap-3">
-          <Link
-            href={`/dashboard/courses/${courseId}`}
-            className="flex items-center gap-2 text-theme-secondary hover:text-primary transition-colors text-sm font-bold whitespace-nowrap"
-          >
-            <svg className="w-4 h-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="hidden sm:inline">{course?.title ?? 'الكورس'}</span>
-            <span className="sm:hidden">رجوع</span>
-          </Link>
-          <span className="text-[var(--border-color)]">/</span>
-          <span className="text-theme-primary font-bold text-sm truncate flex-1 text-right">{video.title}</span>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      {/* ── Course title ── */}
+      {/* ── Course title banner ── */}
       <div
         className="flex-shrink-0 px-4 md:px-8 py-4 border-b-2 border-[var(--border-color)]"
         style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}
@@ -139,32 +128,23 @@ export default async function WatchPage({
       </div>
 
       {/* ── Main layout ── */}
-      {/*  Desktop: module list on LEFT (per mockup), player on RIGHT            */}
-      {/*  Mobile:  player on TOP, module list stacks BELOW                      */}
       <div className="flex flex-col lg:flex-row flex-1 max-w-[1600px] mx-auto w-full">
 
-        {/* ── Left: collapsible module list (hidden on mobile, shown after player) ── */}
+        {/* ── Desktop sidebar (LEFT, hidden on mobile — mobile version lives inside VideoPlayer) ── */}
         <aside className="
-          w-full lg:w-[340px] xl:w-[380px] flex-shrink-0
-          order-2 lg:order-1
-          border-t-2 lg:border-t-0 lg:border-l-2 border-[var(--border-color)]
+          hidden lg:flex lg:flex-col
+          lg:w-[340px] xl:w-[380px] flex-shrink-0
+          border-l-2 border-[var(--border-color)]
           bg-[var(--bg-nav)] lg:overflow-y-auto
         ">
-          {/* Header */}
           <div className="px-5 py-4 border-b-2 border-[var(--border-color)] sticky top-0 bg-[var(--bg-nav)] z-10">
             <h2 className="text-theme-primary font-bold text-base text-right">محتوى الكورس</h2>
           </div>
-
-          <CollapsibleModuleList
-            modules={modules ?? []}
-            videoId={videoId}
-            progressMap={progressObj}
-            lockedIds={lockedArr}
-          />
+          {sidebarContent}
         </aside>
 
-        {/* ── Right: video player ── */}
-        <div className="flex-1 flex flex-col min-w-0 order-1 lg:order-2">
+        {/* ── Player column ── */}
+        <div className="flex-1 flex flex-col min-w-0">
           <VideoPlayer
             videoId={videoId}
             videoUrl={video.video_url}
@@ -175,6 +155,7 @@ export default async function WatchPage({
             isCompleted={currentProgress?.completed ?? false}
             modules={modules ?? []}
             progressMap={progressObj}
+            mobileSidebar={sidebarContent}
           />
         </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -67,6 +67,36 @@ interface ExamSubmission {
   } | null
 }
 
+interface WalletTransaction {
+  id: string
+  amount: number
+  type: 'top_up' | 'purchase' | 'refund'
+  description: string | null
+  created_at: string
+  courses: { title: string } | null
+}
+
+interface VideoProgress {
+  video_id: string
+  last_position: number
+  completed: boolean
+  last_watched_at: string
+  videos: {
+    id: string
+    title: string
+    duration: number | null
+    order_index: number
+    modules: {
+      id: string
+      title: string
+      courses: {
+        id: string
+        title: string
+      } | null
+    } | null
+  } | null
+}
+
 const gradeLabels: Record<string, string> = {
   prep_1: 'الأول إعدادي',
   prep_2: 'الثاني إعدادي',
@@ -109,6 +139,134 @@ function ProgressBar({ value }: { value: number }) {
   )
 }
 
+// ── Wallet top-up modal ───────────────────────────────────────────────────────
+function WalletTopUpModal({
+  userId,
+  userName,
+  currentBalance,
+  onSuccess,
+  onClose,
+}: {
+  userId: string
+  userName: string
+  currentBalance: number
+  onSuccess: (newBalance: number) => void
+  onClose: () => void
+}) {
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const presets = [50, 100, 150, 200, 300, 500]
+
+  const handleSubmit = async () => {
+    const parsed = Number(amount)
+    if (!parsed || parsed <= 0) { setMsg({ type: 'error', text: 'أدخل مبلغ صحيح' }); return }
+    setLoading(true); setMsg(null)
+    const res = await fetch('/api/admin/users/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount: parsed, description: description.trim() || undefined }),
+    })
+    const data = await res.json()
+    setLoading(false)
+    if (data.success) {
+      setMsg({ type: 'success', text: `✓ تم إضافة ${parsed} جنيه — الرصيد الجديد: ${data.balance} جنيه` })
+      onSuccess(data.balance)
+      setAmount('')
+      setDescription('')
+    } else {
+      setMsg({ type: 'error', text: data.error || 'فشل شحن المحفظة' })
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[var(--bg-card)] rounded-2xl border-2 border-[var(--border-color)] w-full max-w-md p-6 shadow-2xl">
+        <h2 className="text-xl font-bold text-theme-primary mb-1">👛 شحن المحفظة</h2>
+        <p className="text-theme-secondary text-sm mb-5">
+          إضافة رصيد لمحفظة <span className="text-theme-primary font-semibold">{userName}</span>
+          <span className="text-theme-muted"> — رصيد حالي: </span>
+          <span className="text-primary font-bold">{currentBalance} جنيه</span>
+        </p>
+
+        {/* Preset amounts */}
+        <p className="text-theme-secondary text-xs font-bold uppercase mb-2">مبالغ سريعة</p>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {presets.map(p => (
+            <button
+              key={p}
+              onClick={() => setAmount(String(p))}
+              className={`py-2 rounded-lg text-sm font-bold transition-all border ${
+                amount === String(p)
+                  ? 'text-white border-transparent'
+                  : 'bg-[var(--bg-card-alt)] border-[var(--border-color)] text-theme-secondary hover:border-primary hover:text-theme-primary'
+              }`}
+              style={amount === String(p) ? { background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' } : {}}
+            >
+              {p} جنيه
+            </button>
+          ))}
+        </div>
+
+        {/* Custom amount */}
+        <div className="mb-4">
+          <label className="block text-theme-secondary text-xs font-bold mb-1.5">مبلغ مخصص (جنيه)</label>
+          <input
+            type="number"
+            min={1}
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="مثال: 250"
+            className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-xl text-theme-primary outline-none placeholder:text-theme-muted transition-colors text-lg font-bold text-center"
+          />
+        </div>
+
+        {/* Payment method note */}
+        <div className="mb-4">
+          <label className="block text-theme-secondary text-xs font-bold mb-1.5">طريقة الدفع / ملاحظة (اختياري)</label>
+          <input
+            type="text"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="مثال: كاش في المركز / فودافون كاش"
+            className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-xl text-theme-primary outline-none placeholder:text-theme-muted transition-colors"
+          />
+        </div>
+
+        {msg && (
+          <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-semibold border ${
+            msg.type === 'success'
+              ? 'bg-green-500/10 border-green-500/40 text-green-700 dark:text-green-300'
+              : 'bg-red-500/10 border-red-500/40 text-red-700 dark:text-red-300'
+          }`}>
+            {msg.text}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleSubmit}
+            disabled={!amount || loading}
+            className="flex-1 py-3 text-white font-bold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' }}
+          >
+            {loading ? 'جاري الشحن...' : `شحن ${amount ? amount + ' جنيه' : ''}`}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-[var(--bg-card-alt)] hover:bg-[var(--border-color)] text-theme-primary font-bold rounded-xl transition-all border border-[var(--border-color)]"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>()
   const router = useRouter()
@@ -116,9 +274,16 @@ export default function UserDetailPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [quizSubmissions, setQuizSubmissions] = useState<QuizSubmission[]>([])
   const [examSubmissions, setExamSubmissions] = useState<ExamSubmission[]>([])
+  const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'courses' | 'quizzes' | 'exams'>('courses')
+  const [activeTab, setActiveTab] = useState<'courses' | 'quizzes' | 'exams' | 'videos' | 'wallet'>('courses')
+
+  // Wallet state
+  const [walletBalance, setWalletBalance] = useState<number>(0)
+  const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([])
+  const [walletLoading, setWalletLoading] = useState(false)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -130,10 +295,26 @@ export default function UserDetailPage() {
         setEnrollments(data.enrollments)
         setQuizSubmissions(data.quizSubmissions)
         setExamSubmissions(data.examSubmissions)
+        setVideoProgress(data.videoProgress || [])
       })
       .catch(() => setError('فشل تحميل بيانات المستخدم'))
       .finally(() => setLoading(false))
   }, [userId])
+
+  const fetchWallet = useCallback(async () => {
+    if (!userId) return
+    setWalletLoading(true)
+    const res = await fetch(`/api/admin/users/wallet?userId=${userId}`)
+    const data = await res.json()
+    setWalletBalance(Number(data.balance ?? 0))
+    setWalletTransactions(data.transactions ?? [])
+    setWalletLoading(false)
+  }, [userId])
+
+  // Load wallet when tab is opened
+  useEffect(() => {
+    if (activeTab === 'wallet') fetchWallet()
+  }, [activeTab, fetchWallet])
 
   if (loading) {
     return (
@@ -164,6 +345,17 @@ export default function UserDetailPage() {
     ? Math.round(examSubmissions.reduce((acc, e) => acc + (e.total ? (e.score / e.total) * 100 : 0), 0) / examSubmissions.length)
     : null
 
+  const txTypeLabel: Record<string, string> = {
+    top_up: '⬆️ شحن',
+    purchase: '🛒 شراء',
+    refund: '↩️ استرداد',
+  }
+  const txTypeColor: Record<string, string> = {
+    top_up: 'text-green-600 dark:text-green-400',
+    purchase: 'text-red-600 dark:text-red-400',
+    refund: 'text-blue-600 dark:text-blue-400',
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
       {/* Back */}
@@ -179,14 +371,12 @@ export default function UserDetailPage() {
         <div className="h-2" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }} />
         <div className="p-6">
           <div className="flex items-start gap-4 flex-wrap">
-            {/* Avatar */}
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #FD1D1D 0%, #FCB045 100%)' }}
             >
               {profile.full_name?.charAt(0).toUpperCase()}
             </div>
-
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap mb-1">
                 <h1 className="text-2xl font-black text-theme-primary">{profile.full_name}</h1>
@@ -216,7 +406,6 @@ export default function UserDetailPage() {
 
       {/* Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Student Info */}
         <div className="bg-theme-card rounded-2xl border border-[var(--border-color)] p-5">
           <h2 className="text-sm font-bold text-theme-secondary uppercase tracking-wider mb-4 flex items-center gap-2">
             <span>👤</span> بيانات الطالب
@@ -245,7 +434,6 @@ export default function UserDetailPage() {
           </div>
         </div>
 
-        {/* Parent Info */}
         <div className="bg-theme-card rounded-2xl border border-[var(--border-color)] p-5">
           <h2 className="text-sm font-bold text-theme-secondary uppercase tracking-wider mb-4 flex items-center gap-2">
             <span>👨‍👩‍👦</span> بيانات ولي الأمر
@@ -300,16 +488,17 @@ export default function UserDetailPage() {
 
       {/* Tabs */}
       <div className="bg-theme-card rounded-2xl border border-[var(--border-color)] overflow-hidden">
-        <div className="flex border-b border-[var(--border-color)]">
+        <div className="flex border-b border-[var(--border-color)] overflow-x-auto">
           {([
             { key: 'courses', label: 'الكورسات', icon: '📚', count: enrollments.length },
             { key: 'quizzes', label: 'الكويزات', icon: '📝', count: quizSubmissions.length },
             { key: 'exams', label: 'الامتحانات', icon: '📋', count: examSubmissions.length },
+            { key: 'wallet', label: 'المحفظة', icon: '👛', count: null },
           ] as const).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-4 px-3 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-4 px-3 text-sm font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'text-white'
                   : 'text-theme-secondary hover:text-theme-primary hover:bg-[var(--bg-card-alt)]'
@@ -318,13 +507,15 @@ export default function UserDetailPage() {
             >
               <span>{tab.icon}</span>
               <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                activeTab === tab.key
-                  ? 'bg-white/20 text-white'
-                  : 'bg-[var(--border-color)] text-theme-secondary'
-              }`}>
-                {tab.count}
-              </span>
+              {tab.count !== null && (
+                <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                  activeTab === tab.key
+                    ? 'bg-white/20 text-white'
+                    : 'bg-[var(--border-color)] text-theme-secondary'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -338,23 +529,15 @@ export default function UserDetailPage() {
               <div className="space-y-3">
                 {enrollments.map(enrollment => (
                   <div key={enrollment.id} className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-card-alt)] border border-[var(--border-color)]">
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">
-                      📚
-                    </div>
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">📚</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-theme-primary font-semibold truncate">
-                        {enrollment.courses?.title || 'كورس محذوف'}
-                      </p>
-                      <p className="text-theme-secondary text-xs mt-0.5">
-                        تسجيل {new Date(enrollment.enrolled_at).toLocaleDateString('ar-EG')}
-                      </p>
+                      <p className="text-theme-primary font-semibold truncate">{enrollment.courses?.title || 'كورس محذوف'}</p>
+                      <p className="text-theme-secondary text-xs mt-0.5">تسجيل {new Date(enrollment.enrolled_at).toLocaleDateString('ar-EG')}</p>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <ProgressBar value={enrollment.progress_percentage ?? 0} />
                       {enrollment.completed && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30">
-                          ✓ مكتمل
-                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30">✓ مكتمل</span>
                       )}
                     </div>
                   </div>
@@ -371,22 +554,14 @@ export default function UserDetailPage() {
               <div className="space-y-3">
                 {quizSubmissions.map(sub => (
                   <div key={sub.id} className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-card-alt)] border border-[var(--border-color)]">
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">
-                      📝
-                    </div>
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">📝</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-theme-primary font-semibold truncate">
-                        {sub.quizzes?.title || 'كويز محذوف'}
-                      </p>
+                      <p className="text-theme-primary font-semibold truncate">{sub.quizzes?.title || 'كويز محذوف'}</p>
                       <p className="text-theme-secondary text-xs mt-0.5">
-                        {sub.quizzes?.modules?.courses?.title && (
-                          <span className="font-medium">{sub.quizzes.modules.courses.title} ← </span>
-                        )}
+                        {sub.quizzes?.modules?.courses?.title && <span className="font-medium">{sub.quizzes.modules.courses.title} ← </span>}
                         {sub.quizzes?.modules?.title}
                       </p>
-                      <p className="text-theme-muted text-xs">
-                        {new Date(sub.submitted_at).toLocaleDateString('ar-EG')}
-                      </p>
+                      <p className="text-theme-muted text-xs">{new Date(sub.submitted_at).toLocaleDateString('ar-EG')}</p>
                     </div>
                     <ScoreBadge score={sub.score} total={sub.total} />
                   </div>
@@ -403,22 +578,14 @@ export default function UserDetailPage() {
               <div className="space-y-3">
                 {examSubmissions.map(sub => (
                   <div key={sub.id} className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-card-alt)] border border-[var(--border-color)]">
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">
-                      📋
-                    </div>
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-lg flex-shrink-0">📋</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-theme-primary font-semibold truncate">
-                        {sub.module_exams?.title || 'امتحان محذوف'}
-                      </p>
+                      <p className="text-theme-primary font-semibold truncate">{sub.module_exams?.title || 'امتحان محذوف'}</p>
                       <p className="text-theme-secondary text-xs mt-0.5">
-                        {sub.module_exams?.modules?.courses?.title && (
-                          <span className="font-medium">{sub.module_exams.modules.courses.title} ← </span>
-                        )}
+                        {sub.module_exams?.modules?.courses?.title && <span className="font-medium">{sub.module_exams.modules.courses.title} ← </span>}
                         {sub.module_exams?.modules?.title}
                       </p>
-                      <p className="text-theme-muted text-xs">
-                        {new Date(sub.submitted_at).toLocaleDateString('ar-EG')}
-                      </p>
+                      <p className="text-theme-muted text-xs">{new Date(sub.submitted_at).toLocaleDateString('ar-EG')}</p>
                     </div>
                     <ScoreBadge score={sub.score} total={sub.total} />
                   </div>
@@ -426,8 +593,79 @@ export default function UserDetailPage() {
               </div>
             )
           )}
+
+          {/* Wallet Tab */}
+          {activeTab === 'wallet' && (
+            <div>
+              {/* Balance card + top up button */}
+              <div className="flex items-center gap-4 mb-5 flex-wrap">
+                <div
+                  className="flex-1 rounded-2xl p-5 text-white min-w-[200px]"
+                  style={{ background: 'linear-gradient(135deg, #FD1D1D 0%, #FCB045 100%)' }}
+                >
+                  <p className="text-white/70 text-sm font-semibold mb-1">رصيد المحفظة الحالي</p>
+                  <p className="text-4xl font-black">
+                    {walletLoading ? '...' : `${walletBalance} جنيه`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTopUpModal(true)}
+                  className="px-6 py-4 text-white font-bold rounded-2xl transition-all hover:opacity-90 flex items-center gap-2 text-lg shadow-lg"
+                  style={{ background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' }}
+                >
+                  ＋ شحن المحفظة
+                </button>
+              </div>
+
+              {/* Transactions */}
+              <h3 className="text-sm font-bold text-theme-secondary uppercase tracking-wider mb-3">سجل المعاملات</h3>
+              {walletLoading ? (
+                <div className="py-8 text-center text-theme-secondary animate-pulse">جاري التحميل...</div>
+              ) : walletTransactions.length === 0 ? (
+                <div className="py-12 text-center text-theme-muted">لا يوجد معاملات بعد</div>
+              ) : (
+                <div className="space-y-2">
+                  {walletTransactions.map(tx => (
+                    <div key={tx.id} className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-card-alt)] border border-[var(--border-color)]">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg flex-shrink-0 ${
+                        tx.type === 'top_up' ? 'bg-green-500/20' : tx.type === 'purchase' ? 'bg-red-500/20' : 'bg-blue-500/20'
+                      }`}>
+                        {tx.type === 'top_up' ? '⬆️' : tx.type === 'purchase' ? '🛒' : '↩️'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-theme-primary font-semibold text-sm truncate">
+                          {tx.description || txTypeLabel[tx.type]}
+                        </p>
+                        {tx.courses && (
+                          <p className="text-theme-secondary text-xs truncate">{(tx.courses as any).title}</p>
+                        )}
+                        <p className="text-theme-muted text-xs">{new Date(tx.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <span className={`text-lg font-black flex-shrink-0 ${tx.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount} جنيه
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Wallet Top-Up Modal */}
+      {showTopUpModal && profile && (
+        <WalletTopUpModal
+          userId={profile.id}
+          userName={profile.full_name}
+          currentBalance={walletBalance}
+          onSuccess={(newBalance) => {
+            setWalletBalance(newBalance)
+            fetchWallet()
+          }}
+          onClose={() => setShowTopUpModal(false)}
+        />
+      )}
     </div>
   )
 }

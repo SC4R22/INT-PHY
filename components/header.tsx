@@ -1,100 +1,121 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { useState } from 'react'
+import Link from 'next/link'
+import { Menu, X } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
-interface HeaderProps {
-  isLoggedIn?: boolean;
-  userName?: string | null;
-  userRole?: string | null;
+function WalletIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
+      <path d="M16 3H8L6 7h12l-2-4Z" />
+      <circle cx="17" cy="14" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  )
 }
 
-export function Header({ isLoggedIn = false, userName = null, userRole = null }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+interface HeaderProps {
+  isLoggedIn?: boolean
+  userName?: string | null
+  userRole?: string | null
+  walletBalance?: number | null
+}
 
-  const navigation = [
-    { name: "الرئيسية", href: "/" },
-    { name: "الكورسات", href: "/courses" },
-  ];
+export function Header({
+  isLoggedIn = false,
+  userName = null,
+  userRole = null,
+  walletBalance = null,
+}: HeaderProps) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const isStudent = userRole === 'student'
+  const isAdmin = userRole === 'admin' || userRole === 'teacher'
+
+  const navLinks = [
+    { name: 'الرئيسية', href: '/' },
+    { name: 'الكورسات', href: '/courses' },
+    ...(isLoggedIn && isStudent
+      ? [
+          { name: 'الداشبورد', href: '/dashboard' },
+          { name: 'المتجر', href: '/store' },
+        ]
+      : []),
+    ...(isLoggedIn && isAdmin
+      ? [{ name: 'لوحة التحكم', href: '/admin' }]
+      : []),
+  ]
 
   return (
     <header className="sticky top-0 z-50 w-full border-b nav-bg backdrop-blur border-[var(--border-color)]">
-      <nav className="container-custom flex items-center justify-between h-16 lg:h-20">
+      {/* Force LTR so logo=left, profile=right regardless of page dir */}
+      <nav className="container-custom flex items-center justify-between h-16" dir="ltr">
 
-        {/* ── Logo ── */}
+        {/* ── LEFT: Logo ── */}
         <Link
-          href={isLoggedIn ? (userRole === 'admin' || userRole === 'teacher' ? '/admin' : '/dashboard') : '/'}
+          href={isLoggedIn ? (isAdmin ? '/admin' : '/dashboard') : '/'}
           className="flex items-center flex-shrink-0"
         >
           <span
-            className="text-3xl lg:text-4xl text-primary leading-none select-none"
-            style={{ fontFamily: '"Rakkas", serif', fontWeight: 400, letterSpacing: '0.02em' }}
+            className="text-3xl text-primary leading-none select-none"
+            style={{ fontFamily: '"Rakkas", serif', fontWeight: 400 }}
           >
             المبدع
           </span>
         </Link>
 
-        {/* ── Desktop nav links ── */}
-        <div className="hidden md:flex items-center gap-8">
-          {navigation.map((item) => (
+        {/* ── CENTER: nav links ── */}
+        <div className="hidden md:flex items-center gap-1">
+          <ThemeToggle />
+          <div className="w-px h-5 bg-[var(--border-color)] mx-1" />
+          {navLinks.map((item) => (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
-              className="text-base font-semibold text-theme-secondary hover:text-primary transition-colors"
-              style={{ fontFamily: "var(--font-tajawal)" }}
+              className="px-3 py-2 rounded-lg text-sm font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] transition-all"
             >
               {item.name}
             </Link>
           ))}
-          {isLoggedIn && (
-            <Link
-              href="/dashboard"
-              className="text-base font-semibold text-theme-secondary hover:text-primary transition-colors"
-              style={{ fontFamily: "var(--font-tajawal)" }}
-            >
-              الداشبورد
-            </Link>
-          )}
         </div>
 
-        {/* ── Desktop right actions ── */}
-        <div className="hidden md:flex items-center gap-4">
-          <ThemeToggle />
+        {/* ── RIGHT: profile / auth ── */}
+        <div className="hidden md:flex items-center gap-2">
           {isLoggedIn ? (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white font-bold text-sm">
-                  {userName?.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-theme-primary font-semibold text-sm" style={{ fontFamily: "var(--font-tajawal)" }}>
-                  {userName}
-                </span>
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[var(--bg-card-alt)] transition-all" dir="rtl">
+              <div className="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {userName?.charAt(0).toUpperCase()}
               </div>
-              <form action="/api/auth/signout" method="post">
-                <button
-                  type="submit"
-                  className="text-base font-semibold text-theme-secondary hover:text-primary transition-colors px-2"
-                  style={{ fontFamily: "var(--font-tajawal)" }}
-                >
-                  خروج
-                </button>
-              </form>
-            </>
+              <div className="hidden lg:flex flex-col leading-tight" dir="ltr">
+                <span className="text-theme-primary font-semibold text-sm">{userName}</span>
+                {isStudent && walletBalance !== null && (
+                  <span className="flex items-center gap-1 text-primary text-xs font-bold">
+                    <WalletIcon className="w-3 h-3" />
+                    {walletBalance} جنيه
+                  </span>
+                )}
+              </div>
+            </div>
           ) : (
             <>
               <Link
                 href="/login"
-                className="text-base font-semibold text-theme-secondary hover:text-primary transition-colors px-2"
-                style={{ fontFamily: "var(--font-tajawal)" }}
+                className="text-sm font-semibold text-theme-secondary hover:text-primary transition-colors px-3 py-1.5"
               >
                 دخول
               </Link>
               <Link
                 href="/signup"
-                className="btn btn-primary text-base px-5 py-2.5 whitespace-nowrap"
-                style={{ fontFamily: "var(--font-tajawal)", fontWeight: 700 }}
+                className="bg-brand-gradient text-white text-sm font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 سجل حساب
               </Link>
@@ -102,71 +123,75 @@ export function Header({ isLoggedIn = false, userName = null, userRole = null }:
           )}
         </div>
 
-        {/* ── Mobile toggle ── */}
-        <div className="flex md:hidden items-center gap-3">
+        {/* ── Mobile: theme + hamburger ── */}
+        <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />
           <button
             type="button"
-            className="inline-flex items-center justify-center p-2 rounded-lg text-theme-secondary hover:text-primary"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="inline-flex items-center justify-center p-2 rounded-lg text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] transition-all"
+            onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="فتح القائمة"
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
 
       {/* ── Mobile dropdown ── */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-nav)]">
-          <div className="flex flex-col gap-1 px-4 pb-4 pt-3">
-            {navigation.map((item) => (
+      {mobileOpen && (
+        <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-nav)] shadow-lg">
+          <div className="flex flex-col px-4 pb-4 pt-2 gap-0.5">
+            {navLinks.map((item) => (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
-                className="block px-4 py-3 text-base font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
-                style={{ fontFamily: "var(--font-tajawal)" }}
-                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-3 text-sm font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
+                onClick={() => setMobileOpen(false)}
               >
                 {item.name}
               </Link>
             ))}
-            {isLoggedIn && (
-              <Link
-                href="/dashboard"
-                className="block px-4 py-3 text-base font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
-                style={{ fontFamily: "var(--font-tajawal)" }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                الداشبورد
-              </Link>
-            )}
-            <div className="flex flex-col gap-2 pt-3 border-t border-[var(--border-color)] mt-2">
+
+            <div className="pt-3 mt-2 border-t border-[var(--border-color)] space-y-1">
               {isLoggedIn ? (
-                <form action="/api/auth/signout" method="post">
-                  <button
-                    type="submit"
-                    className="block w-full text-center px-4 py-3 text-base font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
-                    style={{ fontFamily: "var(--font-tajawal)" }}
-                  >
-                    خروج {userName ? `(${userName})` : ""}
-                  </button>
-                </form>
+                <>
+                  <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--bg-card-alt)]">
+                    <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {userName?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-theme-primary font-semibold text-sm truncate">{userName}</p>
+                      {isStudent && walletBalance !== null && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <WalletIcon className="w-3 h-3 text-primary" />
+                          <span className="text-primary text-xs font-bold">{walletBalance} جنيه</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <form action="/api/auth/signout" method="post">
+                    <button
+                      type="submit"
+                      className="block w-full text-right px-4 py-3 text-sm font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      خروج
+                    </button>
+                  </form>
+                </>
               ) : (
                 <>
                   <Link
                     href="/login"
-                    className="block w-full text-center px-4 py-3 text-base font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
-                    style={{ fontFamily: "var(--font-tajawal)" }}
-                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full text-center px-4 py-3 text-sm font-semibold text-theme-secondary hover:text-primary hover:bg-[var(--bg-card-alt)] rounded-lg transition-colors"
+                    onClick={() => setMobileOpen(false)}
                   >
                     دخول
                   </Link>
                   <Link
                     href="/signup"
-                    className="block w-full text-center btn btn-primary text-base"
-                    style={{ fontFamily: "var(--font-tajawal)", fontWeight: 700 }}
-                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full text-center bg-brand-gradient text-white text-sm font-bold px-4 py-3 rounded-lg hover:opacity-90 transition-opacity"
+                    onClick={() => setMobileOpen(false)}
                   >
                     سجل حساب
                   </Link>
@@ -177,5 +202,5 @@ export function Header({ isLoggedIn = false, userName = null, userRole = null }:
         </div>
       )}
     </header>
-  );
+  )
 }

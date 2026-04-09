@@ -135,8 +135,8 @@ export default function ExamPage({ params, searchParams }: { params: Promise<{ e
       )}
 
       {/* Header */}
-      <header className="bg-[var(--bg-nav)] border-b-2 border-yellow-500/30 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div className="bg-[var(--bg-nav)] border-b-2 border-yellow-500/30 py-4">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => router.back()} className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold flex-shrink-0">← رجوع</button>
             <span className="text-theme-muted">/</span>
@@ -147,7 +147,7 @@ export default function ExamPage({ params, searchParams }: { params: Promise<{ e
             <span className="text-theme-secondary text-sm flex-shrink-0 whitespace-nowrap">{answeredCount}/{questions.length} تمت الإجابة</span>
           )}
         </div>
-      </header>
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
 

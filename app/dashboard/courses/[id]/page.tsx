@@ -107,14 +107,14 @@ export default async function DashboardCoursePage({
   if (isExpiredView || course.deleted_at) {
     return (
       <div className="min-h-screen bg-theme-primary">
-        <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)]">
+        <div className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)]">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
             <Link href="/dashboard" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold">← الداشبورد</Link>
             <span className="text-theme-muted">/</span>
             <span className="text-theme-secondary font-bold text-sm truncate">{course.title}</span>
             <span className="ml-2 px-2 py-0.5 bg-red-500/20 border border-red-500/40 text-red-600 dark:text-red-400 text-xs font-bold rounded-full uppercase">منتهي</span>
           </div>
-        </header>
+        </div>
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="mb-8 bg-red-500/10 border-2 border-red-500/30 rounded-2xl p-6 flex items-start gap-4">
             <span className="text-4xl flex-shrink-0">⛔</span>
@@ -132,13 +132,13 @@ export default async function DashboardCoursePage({
   // ── NORMAL VIEW ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-theme-primary">
-      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)]">
+      <div className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)]">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/dashboard" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold">← الداشبورد</Link>
           <span className="text-theme-muted">/</span>
           <span className="text-theme-primary font-bold text-sm truncate">{course.title}</span>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-10">
         {/* Title + progress */}

@@ -61,6 +61,52 @@
   }
 }
 
+/* ── Mux Player global theme ───────────────────────────────────────────────────
+   CSS custom properties applied globally so they work in both light + dark mode.
+   The <style> block inside video-player.tsx handles per-instance overrides.
+   Full variable reference: https://github.com/muxinc/mux-player/blob/main/packages/mux-player/src/styles/index.css
+──────────────────────────────────────────────────────────────────────────────── */
+mux-player {
+  /* Brand orange accent — progress bar fill, thumb, live indicator */
+  --media-accent-color:                          #FF7802;
+  --seek-live-color:                             #FF7802;
+
+  /* Progress bar */
+  --media-range-thumb-background:                #FF7802;
+  --media-range-bar-color:                       #FF7802;
+  --media-preview-chapter-indicator-background:  #FF7802;
+  --media-range-track-background:                rgba(255,255,255,0.22);
+  --media-range-track-border-radius:             2px;
+  --media-range-thumb-border-radius:             50%;
+
+  /* Control bar — dark translucent, matches dark cards */
+  --media-control-bar-background:                rgba(0,0,0,0.75);
+  --media-background-color:                      #000000;
+
+  /* Icons & text inside controls */
+  --media-icon-color:                            #ffffff;
+  --media-text-color:                            #ffffff;
+  --media-font-family:                           var(--font-tajawal), sans-serif;
+
+  /* Tooltip */
+  --media-tooltip-background:                    rgba(0,0,0,0.85);
+  --media-tooltip-color:                         #ffffff;
+  --media-tooltip-border-radius:                 6px;
+
+  /* Quality / speed popup menu */
+  --media-menu-background:                       #1c1c1c;
+  --media-menu-border-radius:                    10px;
+  --media-menu-color:                            rgba(255,255,255,0.82);
+  --media-menu-item-checked-indicator-color:     #FF7802;
+  --media-menu-item-hover-background:            rgba(255,120,2,0.12);
+
+  /* Time display */
+  --media-time-display-font-size:                0.82rem;
+
+  /* Loading spinner — brand orange */
+  --media-loading-indicator-icon-color:          #FF7802;
+}
+
 @layer components {
   .btn {
     @apply px-6 py-3 rounded-lg font-semibold transition-all duration-200;

@@ -120,10 +120,11 @@ export async function POST(
   }
 
   if (action === 'addVideo') {
-    const { moduleId, title, orderIndex, videoUrl, duration, muxAssetId, muxPlaybackId } = body
+    const { moduleId, title, orderIndex, videoUrl, duration, muxAssetId, muxPlaybackId, thumbnailUrl } = body
     const payload: any = { module_id: moduleId, title, order_index: orderIndex }
     if (videoUrl) { payload.video_url = videoUrl; payload.duration = duration ?? null }
     if (muxAssetId) { payload.mux_asset_id = muxAssetId; payload.mux_playback_id = muxPlaybackId; payload.duration = duration ?? null }
+    if (thumbnailUrl?.trim()) payload.thumbnail_url = thumbnailUrl.trim()
     const { error } = await admin.from('videos').insert(payload)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })

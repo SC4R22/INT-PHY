@@ -44,12 +44,13 @@ function loadYouTubeAPI(cb: () => void) {
 interface Props {
   videoId: string
   title: string
-  onEnded?: () => void
+  startTime?: number
+  onEnded?: (finalPosition: number) => void
   onTimeUpdate?: (currentTime: number, duration?: number) => void
   onPause?: (currentTime: number) => void
 }
 
-export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }: Props) {
+export function YouTubePlayer({ videoId, title, startTime = 0, onEnded, onTimeUpdate, onPause }: Props) {
   const reactId = useId()
   const containerId = `yt-${reactId.replace(/:/g, '')}-${videoId}`
 
@@ -96,12 +97,19 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
           showinfo: 0,
           autoplay: 1,  // skip thumbnail/branding splash
           mute: 1,      // required for autoplay
-          origin: window.location.origin,
+          start: Math.floor(startTime ?? 0), // resume from saved position
+          // Do NOT set origin here — it causes postMessage mismatches in dev
+          // YouTube API sets the correct origin from the iframe src automatically
         },
         events: {
           onReady: (e: any) => {
             if (destroyed) return
-            setDuration(e.target.getDuration())
+            const dur = e.target.getDuration()
+            setDuration(dur)
+            // Seek to exact position (start param only supports integer seconds)
+            if (startTime && startTime > 0) {
+              e.target.seekTo(startTime, true)
+            }
             e.target.unMute()
             e.target.setVolume(100)
             setVolume(100)
@@ -123,8 +131,9 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
             } else if (e.data === S.ENDED) {
               setPhase('ended')
               stopTicker()
-              setCurrentTime(playerRef.current?.getDuration?.() ?? 0)
-              onEnded?.()
+              const finalDuration = playerRef.current?.getDuration?.() ?? 0
+              setCurrentTime(finalDuration)
+              onEnded?.(finalDuration)
             }
           },
         },
@@ -137,7 +146,7 @@ export function YouTubePlayer({ videoId, title, onEnded, onTimeUpdate, onPause }
       playerRef.current = null
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId, containerId])
+  }, [videoId, containerId, startTime])
 
   const stopTicker = useCallback(() => {
     if (tickerRef.current) { clearInterval(tickerRef.current); tickerRef.current = null }

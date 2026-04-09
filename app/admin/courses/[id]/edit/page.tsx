@@ -1,9 +1,8 @@
 'use client'
 
-import { use, useState, useEffect, useRef } from 'react'
+import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
 
 const GRADES = [
   { value: 'sec_1', label: 'ثانوي 1' },
@@ -14,19 +13,14 @@ const GRADES = [
 export default function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({
-    title: '', description: '', price_cash: '', is_free: false, published: false, target_grade: '',
+    title: '', description: '', price_cash: '', is_free: false, published: false, target_grade: '', thumbnail_url: '',
   })
-  const [existingThumbUrl, setExistingThumbUrl] = useState<string | null>(null)
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
-  const [removeThumb, setRemoveThumb] = useState(false)
 
   useEffect(() => {
     fetch(`/api/admin/courses/${id}/details`)
@@ -41,8 +35,8 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           is_free: d.is_free || false,
           published: d.published || false,
           target_grade: d.target_grade || '',
+          thumbnail_url: d.thumbnail_url || '',
         })
-        setExistingThumbUrl(d.thumbnail_url || null)
         setLoading(false)
       })
       .catch(() => { setError('Failed to load course'); setLoading(false) })
@@ -56,48 +50,11 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     }))
   }
 
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setError('الصورة يجب أن تكون أقل من 5 ميجابايت'); return }
-    setThumbnailFile(file)
-    setThumbnailPreview(URL.createObjectURL(file))
-    setRemoveThumb(false)
-    setError(null)
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (!file || !file.type.startsWith('image/')) return
-    if (file.size > 5 * 1024 * 1024) { setError('الصورة يجب أن تكون أقل من 5 ميجابايت'); return }
-    setThumbnailFile(file)
-    setThumbnailPreview(URL.createObjectURL(file))
-    setRemoveThumb(false)
-    setError(null)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(false)
     setSaving(true)
-
-    let thumbnail_url: string | null | undefined = undefined
-
-    if (thumbnailFile) {
-      const supabase = createClient()
-      const ext = thumbnailFile.name.split('.').pop()
-      const path = `${id}/thumbnail.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('course-thumbnails')
-        .upload(path, thumbnailFile, { upsert: true, contentType: thumbnailFile.type })
-      if (upErr) { setError('فشل رفع الصورة: ' + upErr.message); setSaving(false); return }
-      const { data } = supabase.storage.from('course-thumbnails').getPublicUrl(path)
-      thumbnail_url = data.publicUrl
-    } else if (removeThumb) {
-      thumbnail_url = null
-    }
 
     const res = await fetch(`/api/admin/courses/${id}/details`, {
       method: 'POST',
@@ -109,18 +66,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         is_free: form.is_free,
         published: form.published,
         target_grade: form.target_grade || null,
-        ...(thumbnail_url !== undefined ? { thumbnail_url } : {}),
+        thumbnail_url: form.thumbnail_url || null,
       }),
     })
     const json = await res.json()
     if (json.error) { setError(json.error); setSaving(false); return }
 
-    if (thumbnail_url !== undefined) {
-      setExistingThumbUrl(thumbnail_url)
-      setThumbnailFile(null)
-      setThumbnailPreview(null)
-      setRemoveThumb(false)
-    }
     setSuccess(true)
     setSaving(false)
     setTimeout(() => setSuccess(false), 3000)
@@ -138,8 +89,6 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     if (json.error) { setError(json.error); setDeleting(false); return }
     router.push('/admin/courses')
   }
-
-  const currentPreview = thumbnailPreview ?? (removeThumb ? null : existingThumbUrl)
 
   if (loading) return <div className="p-8 text-theme-secondary animate-pulse">جاري التحميل...</div>
 
@@ -159,58 +108,29 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Thumbnail Upload */}
+        {/* Thumbnail URL */}
         <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border-color)]">
-          <label className="block text-theme-secondary text-sm font-bold mb-4 uppercase tracking-wider">صورة الكورس</label>
-          <div
-            className="relative rounded-xl border-2 border-dashed border-[var(--border-color)] hover:border-primary transition-colors cursor-pointer overflow-hidden"
-            style={{ aspectRatio: '16/9' }}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            {currentPreview ? (
-              <>
-                <Image src={currentPreview} alt="Thumbnail preview" fill className="object-cover" unoptimized />
-                <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">اضغط للتغيير</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setThumbnailFile(null)
-                    setThumbnailPreview(null)
-                    setRemoveThumb(true)
-                    if (fileInputRef.current) fileInputRef.current.value = ''
-                  }}
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold transition-colors"
-                >
-                  ✕
-                </button>
-                {thumbnailFile && (
-                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-yellow-600/90 rounded text-white text-xs font-bold">
-                    جديد — غير محفوظ
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-theme-secondary">
-                <div className="w-14 h-14 rounded-full bg-[var(--bg-card-alt)] flex items-center justify-center text-2xl">🖼️</div>
-                <div className="text-center">
-                  <p className="font-semibold text-sm">اضغط أو اسحب وأفلت لرفع الصورة</p>
-                  <p className="text-xs text-theme-muted mt-1">JPG, PNG, WebP · الحد الأقصى 5MB · 16:9 مفضل</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <label className="block text-theme-secondary text-sm font-bold mb-2 uppercase tracking-wider">صورة الكورس (رابط)</label>
           <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
-            onChange={handleThumbnailChange}
-            className="hidden"
+            type="text"
+            name="thumbnail_url"
+            value={form.thumbnail_url}
+            onChange={handleChange}
+            placeholder="https://..."
+            className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none transition-colors placeholder:text-theme-muted"
           />
+          {form.thumbnail_url && (
+            <div className="mt-4 relative rounded-xl overflow-hidden border border-[var(--border-color)]" style={{ aspectRatio: '16/9' }}>
+              <Image
+                src={form.thumbnail_url}
+                alt="Thumbnail preview"
+                fill
+                className="object-cover"
+                unoptimized
+                onError={() => {}}
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border-color)]">

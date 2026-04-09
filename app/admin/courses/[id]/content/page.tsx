@@ -624,6 +624,7 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                       </div>
                     )}
                     {uploadMode === 'upload' && <MuxVideoUploader onSuccess={r => setMuxResult(r)} onError={err => setError(err)} />}
+                    {/* Thumbnail is set at the course level (course edit page), not per video */}
                     <div className="flex gap-2">
                       <button suppressHydrationWarning onClick={() => addVideo(mod.id)} disabled={addingVideo} className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/80 transition-all disabled:opacity-40">{addingVideo ? 'جاري الحفظ...' : 'حفظ الفيديو'}</button>
                       <button suppressHydrationWarning onClick={resetVideoForm} className="px-5 py-2 bg-[var(--bg-card-alt)] text-theme-primary text-sm font-bold rounded-lg hover:bg-[var(--border-color)] transition-all">إلغاء</button>

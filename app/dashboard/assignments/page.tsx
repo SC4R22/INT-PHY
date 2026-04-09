@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,20 +96,6 @@ export default async function AssignmentsPage() {
 
   return (
     <div className="min-h-screen bg-theme-primary">
-      <header className="bg-[var(--bg-nav)] border-b-2 border-[var(--border-color)]">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm font-semibold">← الداشبورد</Link>
-            <span className="text-theme-muted">/</span>
-            <h1 className="text-theme-primary font-bold text-sm">الواجبات</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <span className="text-theme-secondary text-sm hidden sm:block">{profile.full_name}</span>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-payback font-black text-theme-primary uppercase italic mb-2">الواجبات</h2>

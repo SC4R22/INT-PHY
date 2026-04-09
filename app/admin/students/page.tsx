@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import Link from 'next/link'
 
 export default async function StudentsPage() {
   const admin = createAdminClient()
@@ -50,7 +51,7 @@ export default async function StudentsPage() {
       {/* Mobile cards (< md) */}
       <div className="md:hidden space-y-3">
         {students && students.length > 0 ? students.map((student: any) => (
-          <div key={student.id} className="bg-theme-card rounded-xl border border-[var(--border-color)] p-4">
+          <Link key={student.id} href={`/admin/users/${student.id}`} className="block bg-theme-card rounded-xl border border-[var(--border-color)] p-4 hover:border-primary transition-colors">
             <div className="flex items-center justify-between mb-2">
               <p className="text-theme-primary font-bold truncate">{student.full_name}</p>
               <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ml-2 ${
@@ -63,7 +64,7 @@ export default async function StudentsPage() {
               <span className="px-2 py-1 bg-primary/20 text-primary text-xs font-bold rounded">{countMap[student.id] || 0} كورس</span>
               <span className="text-theme-muted text-xs">{new Date(student.created_at).toLocaleDateString()}</span>
             </div>
-          </div>
+          </Link>
         )) : <p className="text-center text-theme-secondary py-12">لا يوجد طلاب بعد</p>}
       </div>
 
@@ -83,8 +84,10 @@ export default async function StudentsPage() {
             </thead>
             <tbody className="divide-y-2 divide-[var(--border-color)]">
               {students && students.length > 0 ? students.map((student: any) => (
-                <tr key={student.id} className="hover:bg-[var(--bg-card-alt)] transition-colors">
-                  <td className="px-6 py-4"><p className="text-theme-primary font-semibold">{student.full_name}</p></td>
+                <tr key={student.id} className="hover:bg-[var(--bg-card-alt)] transition-colors cursor-pointer">
+                  <td className="px-6 py-4">
+                    <Link href={`/admin/users/${student.id}`} className="text-theme-primary font-semibold hover:text-primary transition-colors">{student.full_name}</Link>
+                  </td>
                   <td className="px-6 py-4 text-theme-secondary font-mono text-sm">{student.phone_number}</td>
                   <td className="px-6 py-4">
                     {student.parent_name ? (
