@@ -283,7 +283,7 @@ function MuxVideoPlayer({
         preload="auto"
         nohotkeys
         poster=""
-        style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, '--controls': 'none', '--media-object-fit': 'contain' } as React.CSSProperties}
+        style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, '--controls': 'none', '--media-object-fit': 'contain' } as any}
         onTimeUpdate={handleMuxTimeUpdate}
         onPlay={handleMuxPlay}
         onPause={handleMuxPause}

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
 
 interface Product {
@@ -221,7 +222,7 @@ export default function AdminStorePage() {
                   {/* Image */}
                   {p.image_url ? (
                     <div className="h-44 w-full overflow-hidden relative bg-[var(--bg-card-alt)]">
-                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                      <Image src={p.image_url} alt={p.name} fill className="object-cover" unoptimized />
                     </div>
                   ) : (
                     <div className="h-44 w-full bg-[var(--bg-card-alt)] flex items-center justify-center">
@@ -304,7 +305,7 @@ export default function AdminStorePage() {
                     {/* Product image */}
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-[var(--bg-card-alt)] flex-shrink-0">
                       {order.store_products?.image_url
-                        ? <img src={order.store_products.image_url} alt={order.store_products.name} className="w-full h-full object-cover" />
+                        ? <Image src={order.store_products.image_url} alt={order.store_products.name} fill className="object-cover" unoptimized />
                         : <div className="w-full h-full flex items-center justify-center text-xl">🛍️</div>
                       }
                     </div>

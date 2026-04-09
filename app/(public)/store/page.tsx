@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
 interface Product {
@@ -235,11 +236,7 @@ export default function StorePage() {
                     {/* Product image */}
                     {product.image_url ? (
                       <div className="h-52 w-full overflow-hidden bg-[var(--bg-card-alt)]">
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
                       </div>
                     ) : (
                       <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
@@ -306,7 +303,7 @@ export default function StorePage() {
                   <div key={order.id} className="bg-theme-card rounded-2xl border border-[var(--border-color)] p-4 flex items-center gap-4">
                     <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--bg-card-alt)] flex-shrink-0">
                       {(order.store_products as any)?.image_url ? (
-                        <img src={(order.store_products as any).image_url} alt={(order.store_products as any).name} className="w-full h-full object-cover" />
+                        <Image src={(order.store_products as any).image_url} alt={(order.store_products as any).name} fill className="object-cover" unoptimized />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <svg className="w-7 h-7 text-theme-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
@@ -369,7 +366,7 @@ export default function StorePage() {
                 <div className="flex items-center gap-3 mb-5 pb-5 border-b border-[var(--border-color)]">
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--bg-card-alt)] flex-shrink-0">
                     {checkoutProduct.image_url ? (
-                      <img src={checkoutProduct.image_url} alt={checkoutProduct.name} className="w-full h-full object-cover" />
+                      <Image src={checkoutProduct.image_url} alt={checkoutProduct.name} fill className="object-cover" unoptimized />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <svg className="w-8 h-8 text-theme-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
