@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import Image from "next/image";
 
 export const metadata = {
   title: "كورسات اللغة العربية — منصة المبدع",
@@ -136,12 +135,11 @@ export default async function CoursesPage({
               >
                 <div className="h-48 bg-gradient-to-br from-primary/30 to-primary/5 flex items-center justify-center relative overflow-hidden">
                   {course.thumbnail_url ? (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={course.thumbnail_url}
                       alt={course.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <span className="text-5xl font-payback font-bold text-primary/50 select-none">

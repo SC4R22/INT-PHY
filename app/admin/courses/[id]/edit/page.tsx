@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 const GRADES = [
   { value: 'sec_1', label: 'ثانوي 1' },
@@ -121,13 +120,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           />
           {form.thumbnail_url && (
             <div className="mt-4 relative rounded-xl overflow-hidden border border-[var(--border-color)]" style={{ aspectRatio: '16/9' }}>
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={form.thumbnail_url}
                 alt="Thumbnail preview"
-                fill
-                className="object-cover"
-                unoptimized
-                onError={() => {}}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
             </div>
           )}

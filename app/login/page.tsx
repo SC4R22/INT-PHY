@@ -8,6 +8,8 @@ import { ThemeToggle } from '@/components/theme-toggle'
 function LoginContent() {
   const searchParams = useSearchParams()
   const isBanned = searchParams.get('banned') === '1'
+  const isDeviceLimit = searchParams.get('device_limit') === '1'
+  const deviceLimitMsg = searchParams.get('msg')
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({ phoneNumber: '', password: '' })
@@ -60,6 +62,16 @@ function LoginContent() {
           {isBanned && (
             <div className="bg-red-500 text-white px-4 py-3 rounded-lg mb-6 text-center font-bold">
               تم تعليق حسابك. يرجى التواصل مع الدعم.
+            </div>
+          )}
+          {isDeviceLimit && (
+            <div className="bg-orange-500/20 border-2 border-orange-500 text-orange-300 px-4 py-4 rounded-lg mb-6 text-center space-y-1">
+              <p className="font-bold text-base">🚫 تم تسجيل خروجك</p>
+              <p className="text-sm">
+                {deviceLimitMsg
+                  ? decodeURIComponent(deviceLimitMsg)
+                  : 'وصلت للحد الأقصى من الأجهزة (٢ أجهزة). تواصل مع الدعم لو محتاج تغيير.'}
+              </p>
             </div>
           )}
           {error && <div className="bg-red-500 text-white px-4 py-3 rounded-lg mb-6">{error}</div>}

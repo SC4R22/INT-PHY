@@ -53,6 +53,16 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
   const [qualityLevels, setQualityLevels] = useState<{ height: number; index: number }[]>([])
   const [currentQuality, setCurrentQuality] = useState<number>(-1) // -1 = Auto
 
+  // DRM: block right-click, download, PiP on the raw video element
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.setAttribute('controlsList', 'nodownload noremoteplayback')
+    video.disablePictureInPicture = true
+    video.setAttribute('disablePictureInPicture', '')
+    video.oncontextmenu = (e) => e.preventDefault()
+  }, [src])
+
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -262,9 +272,11 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
         if (showVolumeSlider) setShowVolumeSlider(false)
       }}
     >
+      {/* DRM: hide on print/screenshot */}
+      <style>{`@media print { .custom-player-drm { visibility: hidden !important; } }`}</style>
       <video
         ref={videoRef}
-        className="w-full h-full"
+        className="w-full h-full custom-player-drm"
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
         onPause={handleVideoPause}
@@ -272,6 +284,9 @@ export function CustomVideoPlayer({ src, title, startTime = 0, onTimeUpdate, onE
         onLoadedMetadata={handleLoadedMetadata}
         onClick={(e) => { e.stopPropagation(); togglePlay() }}
         onDoubleClick={toggleFullscreen}
+        onContextMenu={(e) => e.preventDefault()}
+        disablePictureInPicture
+        controlsList="nodownload noremoteplayback"
         playsInline
       />
 

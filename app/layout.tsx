@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Cairo, Tajawal, Rakkas } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar'
 import { Toaster } from 'sonner'
 
 const cairo = Cairo({
@@ -77,7 +78,7 @@ export const metadata: Metadata = {
   },
 }
 
-const jsonLd = {
+const jsonLdString = JSON.stringify({
   '@context': 'https://schema.org',
   '@graph': [
     {
@@ -95,30 +96,26 @@ const jsonLd = {
       publisher: { '@id': `${DOMAIN}/#organization` },
     },
   ],
-}
+})
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head suppressHydrationWarning>
-        <script suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        {/* PWA service worker registration */}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js');
-              });
-            }
-          `
-        }} />
+        {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+        <script
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: jsonLdString }}
+        />
         {/* Apple touch icon */}
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
       </head>
-      <body className={`${cairo.variable} ${tajawal.variable} ${rakkas.variable} antialiased`}>
+      <body suppressHydrationWarning className={`${cairo.variable} ${tajawal.variable} ${rakkas.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange={false}>
+          <ServiceWorkerRegistrar />
           {children}
           <Toaster
             position="bottom-right"

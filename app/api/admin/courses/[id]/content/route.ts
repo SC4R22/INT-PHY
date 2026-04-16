@@ -35,6 +35,18 @@ export async function GET(
 
   const moduleIds = (modulesData ?? []).map((m: any) => m.id)
 
+  // Fetch chapters for all videos in this course
+  const allVideoIds = (modulesData ?? []).flatMap((m: any) => (m.videos ?? []).map((v: any) => v.id))
+  let chaptersMap: Record<string, any[]> = {}
+  if (allVideoIds.length > 0) {
+    const { data: chaptersData } = await admin
+      .from('video_chapters').select('*').in('video_id', allVideoIds).order('order_index')
+    for (const c of chaptersData ?? []) {
+      if (!chaptersMap[c.video_id]) chaptersMap[c.video_id] = []
+      chaptersMap[c.video_id].push(c)
+    }
+  }
+
   let filesMap: Record<string, any[]> = {}
   if (moduleIds.length > 0) {
     const { data: filesData } = await admin
@@ -78,7 +90,7 @@ export async function GET(
     ...mod,
     videos: [...(mod.videos ?? [])].sort(
       (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)
-    ),
+    ).map((v: any) => ({ ...v, chapters: chaptersMap[v.id] ?? [] })),
     files: filesMap[mod.id] ?? [],
     quizzes: quizzesMap[mod.id] ?? [],
     exam: examsMap[mod.id] ?? null,
@@ -133,6 +145,36 @@ export async function POST(
   if (action === 'deleteVideo') {
     const { videoId } = body
     const { error } = await admin.from('videos').delete().eq('id', videoId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  // ── Chapter actions ──────────────────────────────────────────────────────────
+  if (action === 'addChapter') {
+    const { videoId, title, startTime, orderIndex } = body
+    const { error } = await admin.from('video_chapters').insert({
+      video_id: videoId,
+      title: title.trim(),
+      start_time: Math.max(0, parseInt(startTime) || 0),
+      order_index: orderIndex,
+    })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'updateChapter') {
+    const { chapterId, title, startTime } = body
+    const { error } = await admin.from('video_chapters').update({
+      title: title.trim(),
+      start_time: Math.max(0, parseInt(startTime) || 0),
+    }).eq('id', chapterId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === 'deleteChapter') {
+    const { chapterId } = body
+    const { error } = await admin.from('video_chapters').delete().eq('id', chapterId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }

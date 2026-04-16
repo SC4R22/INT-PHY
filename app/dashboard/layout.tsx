@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { StudentNav } from '@/components/student-nav'
+import { DeviceGuardClient } from '@/components/DeviceGuardClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,8 @@ export default async function DashboardLayout({
 
   return (
     <>
+      {/* Device limit enforcement — runs silently on client, kicks 3rd devices */}
+      <DeviceGuardClient userRole={profile.role} />
       <StudentNav
         userName={profile.full_name}
         userRole={profile.role}

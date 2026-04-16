@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import Image from 'next/image'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -215,13 +214,11 @@ export default async function DashboardPage() {
                 {/* Thumbnail area */}
                 <div className="relative flex-1 flex items-center justify-center bg-black/80 min-h-[200px]">
                   {thumbUrl && (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={thumbUrl}
                       alt={vid?.title || 'thumbnail'}
-                      fill
-                      priority
-                      className="object-cover opacity-70 group-hover:opacity-80 transition-opacity"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-80 transition-opacity"
                     />
                   )}
                   {/* Play button */}
@@ -364,7 +361,8 @@ export default async function DashboardPage() {
                 className="bg-theme-card rounded-2xl border-2 border-primary overflow-hidden hover:border-primary/80 transition-all hover:scale-[1.02]">
                 {enrollment.courses?.thumbnail_url && (
                   <div className="h-36 w-full overflow-hidden relative">
-                    <Image src={enrollment.courses.thumbnail_url} alt={enrollment.courses.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={enrollment.courses.thumbnail_url} alt={enrollment.courses.title} className="absolute inset-0 w-full h-full object-cover" />
                   </div>
                 )}
                 <div className="p-6 flex flex-col items-center text-center gap-4">
@@ -406,7 +404,8 @@ export default async function DashboardPage() {
                   className="bg-theme-card rounded-2xl border-2 border-green-500/40 overflow-hidden hover:border-green-500/70 transition-all hover:scale-[1.02]">
                   {enrollment.courses?.thumbnail_url ? (
                     <div className="h-36 w-full overflow-hidden relative">
-                      <Image src={enrollment.courses.thumbnail_url} alt={enrollment.courses.title} fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={enrollment.courses.thumbnail_url} alt={enrollment.courses.title} className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                         <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
                           <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>

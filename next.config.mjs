@@ -1,28 +1,53 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Disable Webpack persistent filesystem cache entirely in dev.
+      // Next.js 15.5.x has a known bug where the pack-file index can
+      // become inconsistent after restarts, causing module factories to
+      // resolve as undefined → "Cannot read properties of undefined
+      // (reading 'call')".  In-memory cache still works; only the
+      // disk persistence is turned off, so cold-start rebuild time is
+      // slightly longer but the crash is gone.
+      config.cache = false
+
+      // Also force Webpack to re-evaluate dynamic imports on every build
+      // rather than replaying a cached chunk graph. This prevents stale
+      // module-factory entries for components loaded with next/dynamic.
+      config.module = config.module || {}
+      config.module.unsafeCache = false
+    }
+    return config
+  },
+
   compress: true,
   images: {
+    // Allow images from ANY https origin.
+    // unoptimized:true alone isn't enough when next/image does domain validation
+    // at build/startup time before the config is fully reloaded — so we keep
+    // both: unoptimized skips the optimiser pipeline, and the wildcard pattern
+    // satisfies the domain-check that runs before unoptimized is respected.
+    unoptimized: true,
     remotePatterns: [
-      { protocol: "https", hostname: "image.mux.com" },
-      { protocol: "https", hostname: "vrefcmplibzoayfyfidd.supabase.co" },
-      { protocol: "https", hostname: "**.r2.dev" },
-      { protocol: "https", hostname: "ahmed-badwy.com" },
-      { protocol: "https", hostname: "img2url.com" },
-      { protocol: "https", hostname: "**.img2url.com" },
-      { protocol: "https", hostname: "image2url.com" },
-      { protocol: "https", hostname: "**.image2url.com" },
-      { protocol: "https", hostname: "i.ibb.co" },
-      { protocol: "https", hostname: "img.youtube.com" },
-      { protocol: "https", hostname: "i.ytimg.com" },
+      { protocol: "https", hostname: "**" },
     ],
   },
 
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production'
     return [
       {
         source: "/_next/static/(.*)",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          {
+            key: "Cache-Control",
+            // In dev, chunks are rebuilt frequently — never cache them.
+            // In prod, Next.js content-hashes every chunk filename so
+            // immutable caching is safe (a new deploy = new filenames).
+            value: isDev
+              ? "no-store, no-cache, must-revalidate"
+              : "public, max-age=31536000, immutable",
+          },
         ],
       },
       {
@@ -31,7 +56,6 @@ const nextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
-      // Cache PWA assets
       {
         source: "/icons/(.*)",
         headers: [

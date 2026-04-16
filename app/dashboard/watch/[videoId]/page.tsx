@@ -21,7 +21,8 @@ export default async function WatchPage({
       modules:module_id (
         id, title, order_index, course_id,
         courses:course_id (id, title)
-      )
+      ),
+      video_chapters (id, title, start_time, order_index)
     `)
     .eq('id', videoId)
     .single()
@@ -114,6 +115,8 @@ export default async function WatchPage({
     />
   )
 
+  const chapters = ((video as any).video_chapters ?? []).sort((a: any, b: any) => a.start_time - b.start_time)
+
   return (
     <div className="min-h-screen bg-theme-primary flex flex-col">
 
@@ -156,6 +159,7 @@ export default async function WatchPage({
             modules={modules ?? []}
             progressMap={progressObj}
             mobileSidebar={sidebarContent}
+            chapters={chapters}
           />
         </div>
 

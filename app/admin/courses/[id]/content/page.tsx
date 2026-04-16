@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { MuxVideoUploader } from '@/components/MuxVideoUploader'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Video { id: string; title: string; video_url: string | null; mux_playback_id: string | null; duration: number | null }
+interface VideoChapter { id: string; title: string; start_time: number; order_index: number }
+interface Video { id: string; title: string; video_url: string | null; mux_playback_id: string | null; duration: number | null; chapters: VideoChapter[] }
 interface ModuleFile { id: string; name: string; file_url: string; file_size: number | null; file_type: string | null; order_index: number }
 interface QuizQuestion { id?: string; question_text: string; option_a: string; option_b: string; option_c: string; option_d: string; correct: 'a'|'b'|'c'|'d'; solution: string }
 interface Quiz { id: string; title: string; order_index: number; quiz_questions: QuizQuestion[] }
@@ -90,6 +91,16 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(Array.from({ length: 10 }, BLANK_QUESTION))
   const [savingQuiz, setSavingQuiz] = useState(false)
 
+  // Chapter state
+  const [activeChapterVideoId, setActiveChapterVideoId] = useState<string | null>(null)
+  const [chapterTitle, setChapterTitle] = useState('')
+  const [chapterStartTime, setChapterStartTime] = useState('')
+  const [addingChapter, setAddingChapter] = useState(false)
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
+  const [editChapterTitle, setEditChapterTitle] = useState('')
+  const [editChapterStartTime, setEditChapterStartTime] = useState('')
+  const [savingChapterEdit, setSavingChapterEdit] = useState(false)
+
   const [collapsedQuizzes, setCollapsedQuizzes] = useState<Record<string, boolean>>({})
   const [editingQuizQuestionId, setEditingQuizQuestionId] = useState<string | null>(null)
   const [editQuizText, setEditQuizText] = useState('')
@@ -148,6 +159,69 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
     const json = await res.json()
     if (!res.ok) throw new Error(json.error || 'Request failed')
     return json
+  }
+
+  const resetChapterForm = () => { setChapterTitle(''); setChapterStartTime(''); setActiveChapterVideoId(null) }
+
+  // Parse "mm:ss" or plain seconds into integer seconds
+  const parseTime = (val: string): number => {
+    const trimmed = val.trim()
+    if (trimmed.includes(':')) {
+      const parts = trimmed.split(':').map(Number)
+      if (parts.length === 2) return (parts[0] * 60) + parts[1]
+      if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2]
+    }
+    return parseInt(trimmed) || 0
+  }
+
+  const formatTimeForDisplay = (secs: number): string => {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const s = secs % 60
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+    return `${m}:${String(s).padStart(2,'0')}`
+  }
+
+  const addChapter = async (videoId: string, existingCount: number) => {
+    if (!chapterTitle.trim()) return
+    setAddingChapter(true); setError(null)
+    try {
+      await callApi('addChapter', {
+        videoId,
+        title: chapterTitle.trim(),
+        startTime: parseTime(chapterStartTime),
+        orderIndex: existingCount + 1,
+      })
+      setChapterTitle(''); setChapterStartTime('')
+      fetchData()
+    } catch (e: any) { setError(e.message) }
+    setAddingChapter(false)
+  }
+
+  const deleteChapter = async (chapterId: string) => {
+    if (!confirm('حذف هذا الفصل؟')) return
+    try { await callApi('deleteChapter', { chapterId }); fetchData() }
+    catch (e: any) { setError(e.message) }
+  }
+
+  const startEditingChapter = (c: VideoChapter) => {
+    setEditingChapterId(c.id)
+    setEditChapterTitle(c.title)
+    setEditChapterStartTime(formatTimeForDisplay(c.start_time))
+  }
+
+  const saveChapterEdit = async () => {
+    if (!editingChapterId || !editChapterTitle.trim()) return
+    setSavingChapterEdit(true); setError(null)
+    try {
+      await callApi('updateChapter', {
+        chapterId: editingChapterId,
+        title: editChapterTitle.trim(),
+        startTime: parseTime(editChapterStartTime),
+      })
+      setEditingChapterId(null); fetchData()
+    } catch (e: any) { setError(e.message) }
+    setSavingChapterEdit(false)
   }
 
   const resetVideoForm = () => { setVideoForm({ title: '', video_url: '', duration: '' }); setMuxResult(null); setUploadMode('youtube'); setActiveModuleId(null) }
@@ -420,25 +494,104 @@ export default function CourseContentPage({ params }: { params: Promise<{ id: st
                 <div className="divide-y divide-[var(--border-color)]">
                   {mod.videos.map((video, vi) => {
                     const isYT = video.video_url && getYouTubeId(video.video_url)
+                    const showChapters = activeChapterVideoId === video.id
                     return (
-                      <div key={video.id} className="flex items-center justify-between px-4 md:px-6 py-3 hover:bg-[var(--bg-card-alt)] transition-colors gap-2">
-                        <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                          <span className="text-primary font-bold text-sm w-5 flex-shrink-0">{vi + 1}.</span>
-                          <span className="text-base md:text-lg flex-shrink-0">🎬</span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-theme-primary font-semibold text-sm md:text-base truncate">{video.title}</p>
-                              {video.mux_playback_id ? <span className="px-2 py-0.5 bg-primary/20 text-theme-secondary text-xs font-bold rounded-full border border-primary/30">MUX</span>
-                                : isYT ? <span className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs font-bold rounded-full border border-red-700/40">YouTube</span>
-                                : <span className="px-2 py-0.5 bg-blue-900/30 text-blue-400 text-xs font-bold rounded-full border border-blue-700/40">URL</span>}
+                      <div key={video.id}>
+                        {/* Video row */}
+                        <div className="flex items-center justify-between px-4 md:px-6 py-3 hover:bg-[var(--bg-card-alt)] transition-colors gap-2">
+                          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                            <span className="text-primary font-bold text-sm w-5 flex-shrink-0">{vi + 1}.</span>
+                            <span className="text-base md:text-lg flex-shrink-0">🎬</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-theme-primary font-semibold text-sm md:text-base truncate">{video.title}</p>
+                                {video.mux_playback_id ? <span className="px-2 py-0.5 bg-primary/20 text-theme-secondary text-xs font-bold rounded-full border border-primary/30">MUX</span>
+                                  : isYT ? <span className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs font-bold rounded-full border border-red-700/40">YouTube</span>
+                                  : <span className="px-2 py-0.5 bg-blue-900/30 text-blue-400 text-xs font-bold rounded-full border border-blue-700/40">URL</span>}
+                                {video.chapters.length > 0 && (
+                                  <span className="px-2 py-0.5 bg-purple-900/30 text-purple-400 text-xs font-bold rounded-full border border-purple-700/40">{video.chapters.length} فصل</span>
+                                )}
+                              </div>
+                              {video.video_url && <p className="text-theme-muted text-xs truncate max-w-[140px] md:max-w-md">{video.video_url}</p>}
                             </div>
-                            {video.video_url && <p className="text-theme-muted text-xs truncate max-w-[140px] md:max-w-md">{video.video_url}</p>}
+                          </div>
+                          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                            {video.duration && <span className="text-theme-secondary text-xs md:text-sm hidden sm:inline">{Math.floor(video.duration / 60)}m {video.duration % 60}s</span>}
+                            <button suppressHydrationWarning onClick={() => {
+                              if (showChapters) { resetChapterForm() }
+                              else { setActiveChapterVideoId(video.id); setChapterTitle(''); setChapterStartTime('') }
+                            }} className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${
+                              showChapters ? 'bg-purple-900/30 text-purple-400 border border-purple-700/40' : 'bg-purple-900/20 text-purple-400 hover:bg-purple-900/40 border border-purple-700/30'
+                            }`}>
+                              {showChapters ? '✕ فصول' : '📑 فصول'}
+                            </button>
+                            <button suppressHydrationWarning onClick={() => deleteVideo(video.id)} className="text-red-400 hover:text-red-300 text-xs md:text-sm font-semibold transition-colors whitespace-nowrap">حذف</button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-                          {video.duration && <span className="text-theme-secondary text-xs md:text-sm hidden sm:inline">{Math.floor(video.duration / 60)}m {video.duration % 60}s</span>}
-                          <button suppressHydrationWarning onClick={() => deleteVideo(video.id)} className="text-red-400 hover:text-red-300 text-xs md:text-sm font-semibold transition-colors whitespace-nowrap">حذف</button>
-                        </div>
+
+                        {/* Chapters panel */}
+                        {showChapters && (
+                          <div className="mx-4 md:mx-6 mb-3 rounded-xl border border-purple-700/30 bg-purple-900/10 overflow-hidden">
+                            <div className="px-4 py-2.5 bg-purple-900/20 border-b border-purple-700/20 flex items-center justify-between">
+                              <p className="text-purple-400 text-xs font-bold uppercase tracking-wider">📑 فصول الفيديو</p>
+                              <p className="text-purple-600 text-xs">بتساعد الطلاب يتنقلوا في الفيديو بسهولة</p>
+                            </div>
+
+                            {/* Existing chapters */}
+                            {video.chapters.length > 0 && (
+                              <div className="divide-y divide-purple-700/20">
+                                {[...video.chapters].sort((a,b) => a.start_time - b.start_time).map((ch, ci) => (
+                                  <div key={ch.id}>
+                                    {editingChapterId !== ch.id ? (
+                                      <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-purple-900/20 transition-colors">
+                                        <span className="text-purple-500 font-mono text-xs w-12 flex-shrink-0 font-bold">{formatTimeForDisplay(ch.start_time)}</span>
+                                        <span className="text-[#EFEFEF] text-sm flex-1 truncate">{ch.title}</span>
+                                        <div className="flex gap-2 flex-shrink-0">
+                                          <button suppressHydrationWarning onClick={() => startEditingChapter(ch)} className="text-purple-400 hover:text-purple-300 text-xs font-semibold">✏️</button>
+                                          <button suppressHydrationWarning onClick={() => deleteChapter(ch.id)} className="text-red-400 hover:text-red-300 text-xs font-semibold">حذف</button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="px-4 py-3 bg-purple-900/20 flex flex-col sm:flex-row gap-2">
+                                        <input type="text" value={editChapterTitle} onChange={e => setEditChapterTitle(e.target.value)}
+                                          placeholder="اسم الفصل" className="flex-1 px-3 py-1.5 bg-[#1a1a1a] border border-purple-600/40 focus:border-purple-500 rounded-lg text-[#EFEFEF] outline-none text-sm" />
+                                        <input type="text" value={editChapterStartTime} onChange={e => setEditChapterStartTime(e.target.value)}
+                                          placeholder="0:00" className="w-24 px-3 py-1.5 bg-[#1a1a1a] border border-purple-600/40 focus:border-purple-500 rounded-lg text-[#EFEFEF] outline-none text-sm font-mono" />
+                                        <div className="flex gap-2">
+                                          <button suppressHydrationWarning onClick={saveChapterEdit} disabled={savingChapterEdit || !editChapterTitle.trim()}
+                                            className="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-500 transition-all disabled:opacity-40">
+                                            {savingChapterEdit ? '...' : '✓ حفظ'}
+                                          </button>
+                                          <button suppressHydrationWarning onClick={() => setEditingChapterId(null)}
+                                            className="px-3 py-1.5 bg-[#2A2A2A] text-[#B3B3B3] text-xs font-bold rounded-lg hover:bg-[#3A3A3A]">إلغاء</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Add chapter form */}
+                            <div className="px-4 py-3 border-t border-purple-700/20 bg-[#111]">
+                              <p className="text-purple-400 text-xs font-bold mb-2">+ فصل جديد</p>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <input type="text" value={chapterTitle} onChange={e => setChapterTitle(e.target.value)}
+                                  placeholder="مثال: مقدمة الفصل" onKeyDown={e => e.key === 'Enter' && addChapter(video.id, video.chapters.length)}
+                                  className="flex-1 px-3 py-2 bg-[#1a1a1a] border border-purple-600/30 focus:border-purple-500 rounded-lg text-[#EFEFEF] outline-none text-sm placeholder:text-gray-600" />
+                                <input type="text" value={chapterStartTime} onChange={e => setChapterStartTime(e.target.value)}
+                                  placeholder="0:00 أو ثواني" onKeyDown={e => e.key === 'Enter' && addChapter(video.id, video.chapters.length)}
+                                  className="w-32 px-3 py-2 bg-[#1a1a1a] border border-purple-600/30 focus:border-purple-500 rounded-lg text-[#EFEFEF] outline-none text-sm font-mono placeholder:text-gray-600" />
+                                <button suppressHydrationWarning onClick={() => addChapter(video.id, video.chapters.length)}
+                                  disabled={addingChapter || !chapterTitle.trim()}
+                                  className="px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded-lg hover:bg-purple-500 transition-all disabled:opacity-40">
+                                  {addingChapter ? 'جاري...' : '+ إضافة'}
+                                </button>
+                              </div>
+                              <p className="text-gray-600 text-xs mt-1.5">الوقت: اكتب دقيقة:ثانية (مثل 1:30) أو ثواني (مثل 90)</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
