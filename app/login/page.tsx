@@ -36,6 +36,15 @@ function LoginContent() {
     })
   }
 
+  // Parse device lines from the message (each line is a device entry)
+  const deviceLines = deviceLimitMsg
+    ? decodeURIComponent(deviceLimitMsg)
+        .split('\n')
+        .filter((line) => line.trim().length > 0)
+    : []
+  const deviceLimitHeader = deviceLines[0] || 'وصلت للحد الأقصى من الأجهزة (٢ أجهزة).'
+  const deviceEntries = deviceLines.slice(1)
+
   return (
     <div suppressHydrationWarning className="min-h-screen bg-theme-primary">
       <div className="absolute top-4 right-4 z-10">
@@ -64,16 +73,50 @@ function LoginContent() {
               تم تعليق حسابك. يرجى التواصل مع الدعم.
             </div>
           )}
+
           {isDeviceLimit && (
-            <div className="bg-orange-500/20 border-2 border-orange-500 text-orange-300 px-4 py-4 rounded-lg mb-6 text-center space-y-1">
-              <p className="font-bold text-base">🚫 تم تسجيل خروجك</p>
-              <p className="text-sm">
-                {deviceLimitMsg
-                  ? decodeURIComponent(deviceLimitMsg)
-                  : 'وصلت للحد الأقصى من الأجهزة (٢ أجهزة). تواصل مع الدعم لو محتاج تغيير.'}
-              </p>
+            <div
+              className="mb-6 rounded-xl overflow-hidden"
+              style={{ border: '2px solid #f97316' }}
+            >
+              {/* Header */}
+              <div className="px-4 py-3 text-center" style={{ background: 'rgba(249,115,22,0.15)' }}>
+                <p className="font-bold text-base" style={{ color: '#f97316' }}>
+                  🚫 تم تسجيل خروجك
+                </p>
+                <p className="text-sm mt-1" style={{ color: '#d1d5db' }}>
+                  {deviceEntries.length > 0
+                    ? 'وصلت للحد الأقصى (٢ أجهزة). الأجهزة المسجلة على حسابك:'
+                    : deviceLimitHeader}
+                </p>
+              </div>
+
+              {/* Device list */}
+              {deviceEntries.length > 0 && (
+                <div className="px-4 pb-4 pt-3 space-y-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                  {deviceEntries.map((line, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg px-3 py-2 text-sm"
+                      style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: '#e5e7eb',
+                        direction: 'rtl',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  <p className="text-xs text-center pt-1" style={{ color: '#6b7280' }}>
+                    لو محتاج تغيير الجهاز، تواصل مع الدعم.
+                  </p>
+                </div>
+              )}
             </div>
           )}
+
           {error && <div className="bg-red-500 text-white px-4 py-3 rounded-lg mb-6">{error}</div>}
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
