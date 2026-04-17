@@ -36,6 +36,7 @@ export default function UsersPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [deleteModal, setDeleteModal] = useState<{ userId: string; name: string } | null>(null)
+  const [logoutDevicesModal, setLogoutDevicesModal] = useState<{ userId: string; name: string } | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -67,13 +68,7 @@ export default function UsersPage() {
     }, 350)
   }
 
-  const filtered = users // server already filtered
-
-  const roleCounts = {
-    student: 0,
-    teacher: 0,
-    admin: 0,
-  }
+  const filtered = users
 
   const handleBan = async (userId: string, ban: boolean, name: string) => {
     setActionLoading(userId + '-ban')
@@ -108,6 +103,24 @@ export default function UsersPage() {
       fetchUsers(page, search)
     } else {
       showToast('error', data.error || 'فشل الحذف')
+    }
+  }
+
+  const handleLogoutDevices = async () => {
+    if (!logoutDevicesModal) return
+    setActionLoading(logoutDevicesModal.userId + '-logout')
+    const res = await fetch('/api/admin/users/devices', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: logoutDevicesModal.userId }),
+    })
+    const data = await res.json()
+    setActionLoading(null)
+    setLogoutDevicesModal(null)
+    if (data.success) {
+      showToast('success', `✓ تم تسجيل خروج ${logoutDevicesModal.name} من كل الأجهزة فوراً. يجب عليه تسجيل الدخول مجدداً.`)
+    } else {
+      showToast('error', data.error || 'فشل تسجيل الخروج')
     }
   }
 
@@ -206,6 +219,13 @@ export default function UsersPage() {
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-50 ${
                   user.is_banned ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30' : 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30'
                 }`}>{actionLoading === user.id + '-ban' ? '...' : user.is_banned ? '✓ رفع الحظر' : '⛘ حظر'}</button>
+              <button
+                onClick={() => setLogoutDevicesModal({ userId: user.id, name: user.full_name })}
+                disabled={actionLoading === user.id + '-logout'}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-500/30 transition-all disabled:opacity-50"
+              >
+                {actionLoading === user.id + '-logout' ? '...' : '📱 تسجيل خروج'}
+              </button>
               <button onClick={() => { setPasswordModal({ userId: user.id, name: user.full_name }); setNewPassword(''); setPasswordMsg(null) }}
                 className="px-3 py-1.5 text-xs font-bold rounded-lg text-white" style={{ background: 'linear-gradient(90deg,#FD1D1D,#FCB045)' }}>🔑 كلمة السر</button>
               <button onClick={() => setDeleteModal({ userId: user.id, name: user.full_name })}
@@ -282,6 +302,13 @@ export default function UsersPage() {
                         {actionLoading === user.id + '-ban' ? '...' : user.is_banned ? '✓ رفع الحظر' : '⛘ حظر'}
                       </button>
                       <button
+                        onClick={() => setLogoutDevicesModal({ userId: user.id, name: user.full_name })}
+                        disabled={actionLoading === user.id + '-logout'}
+                        className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 dark:text-blue-400 border border-blue-500/30 transition-all disabled:opacity-50"
+                      >
+                        {actionLoading === user.id + '-logout' ? '...' : '📱 تسجيل خروج'}
+                      </button>
+                      <button
                         onClick={() => { setPasswordModal({ userId: user.id, name: user.full_name }); setNewPassword(''); setPasswordMsg(null) }}
                         className="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-white border-0" style={{ background: 'linear-gradient(90deg, #FD1D1D 0%, #FCB045 100%)' }}
                       >
@@ -345,6 +372,43 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Force Sign-Out Confirm Modal */}
+      {logoutDevicesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] rounded-2xl border-2 border-blue-500/40 w-full max-w-md p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-2">📱 تسجيل خروج إجباري</h2>
+            <p className="text-theme-secondary text-sm mb-2">
+              هل تريد تسجيل خروج كل الأجهزة لـ:
+            </p>
+            <p className="text-theme-primary font-bold text-lg mb-4">{logoutDevicesModal.name}</p>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3 mb-6">
+              <p className="text-blue-700 dark:text-blue-300 text-sm font-semibold mb-1">ماذا سيحدث؟</p>
+              <ul className="text-blue-600/80 dark:text-blue-400/80 text-xs space-y-1">
+                <li>• سيتم حذف كل جلسات تسجيل الدخول من قاعدة البيانات فوراً</li>
+                <li>• أي جهاز مسجل الدخول الآن سيتم طرده في الطلب التالي</li>
+                <li>• الكوكيز المحفوظة في المتصفح ستصبح غير صالحة</li>
+                <li>• يمكنه بعدها تسجيل الدخول من أجهزة جديدة (حتى ٢ جهاز)</li>
+              </ul>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleLogoutDevices}
+                disabled={actionLoading === logoutDevicesModal.userId + '-logout'}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all disabled:opacity-50"
+              >
+                {actionLoading === logoutDevicesModal.userId + '-logout' ? 'جاري تسجيل الخروج...' : '✓ نعم، سجّل الخروج'}
+              </button>
+              <button
+                onClick={() => setLogoutDevicesModal(null)}
+                className="flex-1 py-3 bg-[var(--bg-card-alt)] hover:bg-[var(--border-color)] text-theme-primary font-bold rounded-xl transition-all border border-[var(--border-color)]"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Modal */}
       {passwordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -403,9 +467,7 @@ export default function UsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-[var(--bg-card)] rounded-2xl border-2 border-red-500/40 w-full max-w-md p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">🗑 حذف الحساب</h2>
-            <p className="text-theme-secondary text-sm mb-2">
-              هل أنت متأكد من حذف حساب:
-            </p>
+            <p className="text-theme-secondary text-sm mb-2">هل أنت متأكد من حذف حساب:</p>
             <p className="text-theme-primary font-bold text-lg mb-5">{deleteModal.name}</p>
             <p className="text-red-600 dark:text-red-400 text-xs mb-6 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
               ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم حذف كل بياناته واشتراكاته وتقدمه نهائيًا.
