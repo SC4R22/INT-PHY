@@ -143,7 +143,7 @@ export default async function CoursesPage({
                     />
                   ) : (
                     <span className="text-5xl font-payback font-bold text-primary/50 select-none">
-                      مبدع
+                      المبدع
                     </span>
                   )}
                 </div>

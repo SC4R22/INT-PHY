@@ -22,7 +22,11 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
   const { data: course, error } = await supabase.from('courses').select('*').eq('id', id).eq('published', true).is('deleted_at', null).single()
   if (error || !course) notFound()
 
-  const { data: modules } = await supabase.from('modules').select('id, title, order_index, videos (id, title, duration, order_index)').eq('course_id', id).order('order_index')
+  const { data: modules } = await supabase.from('modules').select('id, title, order_index').eq('course_id', id).order('order_index')
+  const moduleIds = (modules ?? []).map(m => m.id)
+  const { data: allVideos } = moduleIds.length > 0
+    ? await supabase.from('videos').select('id, title, duration, order_index, module_id').in('module_id', moduleIds)
+    : { data: [] }
   const { data: { user } } = await supabase.auth.getUser()
 
   let isEnrolled = false
@@ -31,8 +35,9 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
     isEnrolled = !!enrollment
   }
 
-  const totalVideos = modules?.reduce((acc, m) => acc + (m.videos?.length || 0), 0) || 0
-  const totalDuration = modules?.reduce((acc, m) => acc + (m.videos?.reduce((s: number, v: any) => s + (v.duration || 0), 0) || 0), 0) || 0
+  const modulesWithVideos = (modules ?? []).map(m => ({ ...m, videos: (allVideos ?? []).filter(v => v.module_id === m.id) }))
+  const totalVideos = (allVideos ?? []).length
+  const totalDuration = (allVideos ?? []).reduce((acc: number, v: any) => acc + (v.duration || 0), 0)
 
   return (
     <div className="bg-theme-primary min-h-screen">
@@ -48,7 +53,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
                 <p className="text-theme-secondary text-base md:text-lg leading-relaxed max-w-2xl">{course.description}</p>
               </div>
               <div className="flex flex-wrap gap-4 md:gap-6 pt-4">
-                {[{ icon: '📚', val: modules?.length || 0, label: 'وحدات' }, { icon: '🎬', val: totalVideos, label: 'فيديوهات' }].map(s => (
+                {[{ icon: '📚', val: course.module_count ?? modulesWithVideos.length, label: 'وحدات' }, { icon: '🎬', val: totalVideos, label: 'فيديوهات' }].map(s => (
                   <div key={s.label} className="flex items-center gap-2 text-theme-secondary">
                     <span className="text-2xl">{s.icon}</span>
                     <div><p className="text-theme-primary font-bold">{s.val}</p><p className="text-xs" dir="rtl">{s.label}</p></div>
@@ -71,7 +76,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
                 <EnrollButton courseId={id} courseTitle={course.title} isFree={course.is_free} isLoggedIn={!!user} isEnrolled={isEnrolled} />
                 <div className="mt-6 space-y-3 pt-6 border-t border-[var(--border-color)]">
                   <p className="text-theme-secondary text-sm font-semibold uppercase tracking-wider">يشمل</p>
-                  {[`${modules?.length || 0} وحدة`, `${totalVideos} فيديو`, 'وصول دائم', 'شاهد على أي جهاز'].map(item => (
+                  {[`${course.module_count ?? modulesWithVideos.length} وحدة`, `${totalVideos} فيديو`, 'وصول دائم'].map(item => (
                     <div key={item} className="flex items-center gap-2 text-theme-primary text-sm"><span className="text-green-400">✓</span>{item}</div>
                   ))}
                 </div>
@@ -83,20 +88,20 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ i
 
       <div className="container-custom py-16">
         <h2 className="text-3xl lg:text-4xl font-payback font-bold text-theme-primary mb-8">محتوى الكورس</h2>
-        {!modules || modules.length === 0 ? (
+        {!modulesWithVideos || modulesWithVideos.length === 0 ? (
           <div className="text-center py-16 bg-theme-card rounded-2xl border-2 border-dashed border-[var(--border-color)]">
             <p className="text-4xl mb-3">📋</p><p className="text-theme-secondary text-lg">جاري تجهيز المحتوى. تفضل عد لاحقًا.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {modules.map((mod: any, modIndex: number) => (
+            {modulesWithVideos.map((mod: any, modIndex: number) => (
               <div key={mod.id} className="bg-theme-card rounded-xl overflow-hidden border-2 border-[var(--border-color)]">
                 <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-[var(--bg-card-alt)] gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{modIndex + 1}</span>
                     <h3 className="text-theme-primary font-bold truncate">{mod.title}</h3>
                   </div>
-                  <span className="text-theme-secondary text-sm flex-shrink-0">{mod.videos?.length || 0} فيديو</span>
+                  <span className="text-theme-secondary text-sm flex-shrink-0">{mod.videos.length} فيديو</span>
                 </div>
                 {mod.videos && mod.videos.length > 0 && (
                   <div className="divide-y divide-[var(--border-color)]">

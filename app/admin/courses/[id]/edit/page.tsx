@@ -18,7 +18,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [form, setForm] = useState({
-    title: '', description: '', price_cash: '', is_free: false, published: false, target_grade: '', thumbnail_url: '',
+    title: '', description: '', price_cash: '', is_free: false, published: false, target_grade: '', thumbnail_url: '', module_count: '',
   })
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           published: d.published || false,
           target_grade: d.target_grade || '',
           thumbnail_url: d.thumbnail_url || '',
+          module_count: d.module_count?.toString() || '',
         })
         setLoading(false)
       })
@@ -66,6 +67,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         published: form.published,
         target_grade: form.target_grade || null,
         thumbnail_url: form.thumbnail_url || null,
+        module_count: form.module_count || null,
       }),
     })
     const json = await res.json()
@@ -141,6 +143,20 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           <label className="block text-theme-secondary text-sm font-bold mb-2 uppercase tracking-wider">الوصف *</label>
           <textarea name="description" value={form.description} onChange={handleChange} required rows={4}
             className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none transition-colors resize-none" />
+        </div>
+
+        <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border-color)]">
+          <label className="block text-theme-secondary text-sm font-bold mb-2 uppercase tracking-wider">عدد الوحدات (للعرض)</label>
+          <p className="text-theme-muted text-xs mb-3">هذا الرقم هو ما يظهر للطالب في صفحة الكورس. اتركه فارغًا لإخفاء العداد.</p>
+          <input
+            type="number"
+            name="module_count"
+            value={form.module_count}
+            onChange={handleChange}
+            min="0"
+            placeholder="مثال: 5"
+            className="w-full px-4 py-3 bg-[var(--bg-input)] border-2 border-[var(--border-color)] focus:border-primary rounded-lg text-theme-primary outline-none transition-colors placeholder:text-theme-muted"
+          />
         </div>
 
         <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border-color)]">
